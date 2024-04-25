@@ -1,12 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:async_hook/async_hook.dart';
+import 'package:flutter_async_hook/flutter_async_hook.dart';
 
+// TODO(masreplay): implement integration real test
 void main() {
-  test('adds one to input values', () {
-    final calculator = Calculator();
-    expect(calculator.addOne(2), 3);
-    expect(calculator.addOne(-7), -6);
-    expect(calculator.addOne(0), 1);
+  test('useAsyncState', () {
+    final state = useAsyncState();
+    expect(state(Future.value(42)), 42);
   });
 }

@@ -35,7 +35,7 @@ ValueNotifier<AsyncSnapshot<T>> useAsyncState<T>({
   );
 }
 
-extension AsyncSnapshotValueNotifier<T> on ValueNotifier<AsyncSnapshot<T>> {
+extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// Resets the value of the [ValueNotifier] to an [AsyncSnapshot] with [ConnectionState.none].
   void reset() {
     value = AsyncSnapshot<T>.nothing();

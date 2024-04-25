@@ -1,4 +1,4 @@
-# async_hook
+# flutter_async_hook
 
 Flutter hook for future async operations.
 
@@ -13,13 +13,13 @@ In the `pubspec.yaml` of your flutter project, add the following dependency:
 ```yaml
 dependencies:
   ...
-  async_hook: any
+  flutter_async_hook: any
 ```
 
 ## Usage
 
 ```dart
-import 'package:async_hook/async_hook.dart';
+import 'package:flutter_async_hook/flutter_async_hook.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
