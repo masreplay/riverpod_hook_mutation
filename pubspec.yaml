@@ -1,6 +1,7 @@
 name: async_hook
 description: "Flutter hook for future async operations."
 version: 0.0.1
+homepage: "https://github.com/masreplay/async_hook"
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
