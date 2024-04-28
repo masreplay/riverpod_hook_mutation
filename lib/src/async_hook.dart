@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -17,7 +19,7 @@ import 'async_snapshot.dart';
 /// ```dart
 /// final snapshot = useAsyncState<int>(data: 42);
 /// ```
-ValueNotifier<AsyncSnapshot<T>> useAsyncState<T>({
+ValueNotifier<AsyncSnapshot<T>> useAsyncSnapshot<T>({
   T? data,
   AsyncSnapshot<T>? state,
 }) {
@@ -41,7 +43,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     value = AsyncSnapshot<T>.nothing();
   }
 
-  /// Executes a [Future] and updates the value of the [ValueNotifier] accordingly.
+  /// futures a [Future] and updates the value of the [ValueNotifier] accordingly.
   ///
   /// The [call] method sets the value of the [ValueNotifier] to [AsyncSnapshot.waiting()],
   /// then waits for the [future] to complete.
@@ -75,21 +77,23 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     );
   }
 
-  /// Executes a [Future] and returns the result based on the current value of the [ValueNotifier].
+  /// futures a [Future] and returns the result based on the current value of the [ValueNotifier].
   ///
-  /// The [execute] method calls the [call] method with the provided [future],
+  /// The [future] method calls the [call] method with the provided [future],
   /// then returns the result of calling [value.whenOrNull] with the provided [data] and [error] callbacks.
   ///
   /// Example usage:
   /// ```dart
   /// final snapshot = useAsyncState<int>();
-  /// final result = await snapshot.execute(fetchData(), data: (data) => data.toString());
+  /// final result = await snapshot.future(fetchData(), data: (data) => data.toString());
   /// ```
-  Future<R?> execute<R>(
+  Future<R?> future<R>(
     Future<T> future, {
-    required AsyncDataCallback<R?, T>? data,
-    required AsyncErrorCallback<R?>? error,
+    FutureOr<R?> Function()? loading,
+    AsyncDataCallback<R?, T>? data,
+    AsyncErrorCallback<R?>? error,
   }) async {
+    await loading?.call();
     await call(future);
     return value.whenOrNull(data: data, error: error);
   }

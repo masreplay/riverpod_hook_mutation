@@ -22,7 +22,7 @@ class HomePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = useAsyncState<String>();
+    final state = useAsyncSnapshot<String>();
 
     return Column(
       children: [
