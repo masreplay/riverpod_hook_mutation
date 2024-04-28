@@ -7,7 +7,7 @@ import 'async_snapshot.dart';
 
 /// A custom hook that provides a [ValueNotifier] for managing asynchronous state.
 ///
-/// The [useAsyncState] hook can be used to create a [ValueNotifier] that holds an [AsyncSnapshot] of type [T].
+/// The [useAsyncSnapshot] hook can be used to create a [ValueNotifier] that holds an [AsyncSnapshot] of type [T].
 /// It takes an optional [data] parameter and an optional [state] parameter.
 /// Only one of them can be provided at a time.
 ///
@@ -17,7 +17,7 @@ import 'async_snapshot.dart';
 ///
 /// Example usage:
 /// ```dart
-/// final snapshot = useAsyncState<int>(data: 42);
+/// final snapshot = useAsyncSnapshot<int>(data: 42);
 /// ```
 ValueNotifier<AsyncSnapshot<T>> useAsyncSnapshot<T>({
   T? data,
@@ -39,7 +39,7 @@ ValueNotifier<AsyncSnapshot<T>> useAsyncSnapshot<T>({
 
 extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// Resets the value of the [ValueNotifier] to an [AsyncSnapshot] with [ConnectionState.none].
-  void reset() {
+  void reload() {
     value = AsyncSnapshot<T>.nothing();
   }
 
@@ -54,7 +54,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   ///
   /// Example usage:
   /// ```dart
-  /// final snapshot = useAsyncState<int>();
+  /// final snapshot = useAsyncSnapshot<int>();
   /// snapshot.call(fetchData());
   /// ```
   Future<void> call(Future<T> future) async {
@@ -84,7 +84,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   ///
   /// Example usage:
   /// ```dart
-  /// final snapshot = useAsyncState<int>();
+  /// final snapshot = useAsyncSnapshot<int>();
   /// final result = await snapshot.future(fetchData(), data: (data) => data.toString());
   /// ```
   Future<R?> future<R>(
@@ -111,7 +111,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   ///
   /// Example usage:
   /// ```dart
-  /// final snapshot = useAsyncState<int>();
+  /// final snapshot = useAsyncSnapshot<int>();
   /// final result = snapshot.whenOrNull(
   ///   data: (data) => data.toString(),
   ///   error: (error, stackTrace) => 'Error: $error',
@@ -138,7 +138,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   ///
   /// Example usage:
   /// ```dart
-  /// final snapshot = useAsyncState<int>();
+  /// final snapshot = useAsyncSnapshot<int>();
   /// final result = snapshot.whenDataOrError(
   ///   data: (data) => data.toString(),
   ///   error: (error, stackTrace) => 'Error: $error',

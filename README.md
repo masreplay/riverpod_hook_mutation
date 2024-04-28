@@ -4,7 +4,7 @@ Flutter hook for future async operations.
 
 ## Features
 
-- [x] `useAsyncState` - Hook for async operations.
+- [x] `useAsyncSnapshot` - Hook for async operations.
 
 ## Getting started
 
@@ -43,7 +43,7 @@ class HomePage extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = useAsyncState<String>();
+    final state = useAsyncSnapshot<String>();
 
     return Column(
       children: [
