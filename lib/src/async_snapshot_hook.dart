@@ -55,26 +55,21 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// Example usage:
   /// ```dart
   /// final snapshot = useAsyncSnapshot<int>();
-  /// snapshot.call(fetchData());
+  /// snapshot(fetchData());
   /// ```
   Future<void> call(Future<T> future) async {
     value = AsyncSnapshot<T>.waiting();
 
-    await future.then<void>(
-      (data) {
-        value = AsyncSnapshot<T>.withData(
-          ConnectionState.done,
-          data,
-        );
-      },
-      onError: (Object error, StackTrace stackTrace) {
-        value = AsyncSnapshot<T>.withError(
-          ConnectionState.done,
-          error,
-          stackTrace,
-        );
-      },
-    );
+    try {
+      final result = await future;
+      value = AsyncSnapshot<T>.withData(ConnectionState.done, result);
+    } catch (e) {
+      value = AsyncSnapshot<T>.withError(
+        ConnectionState.done,
+        e,
+        StackTrace.current,
+      );
+    }
   }
 
   /// futures a [Future] and returns the result based on the current value of the [ValueNotifier].
@@ -98,25 +93,32 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     return value.whenOrNull(data: data, error: error);
   }
 
-  /// Returns `true` if the current state of the [ValueNotifier] is [ConnectionState.waiting].
-  bool get isLoading => value.isLoading;
+  /// [AsyncSnapshot] extension methods.
+  ConnectionState get connectionState => value.connectionState;
+  bool get hasError => value.hasError;
+  Object? get error => value.error;
+  StackTrace? get stackTrace => value.stackTrace;
+  T? get data => value.data;
 
-  /// Returns the result of calling [value.whenOrNull] with the provided callbacks.
-  ///
-  /// The [whenOrNull] method returns the result of calling the appropriate callback based on the current state of the [ValueNotifier].
-  /// If the state is [ConnectionState.none], it calls the [idle] callback.
-  /// If the state is [ConnectionState.done] and the data is not `null`, it calls the [data] callback.
-  /// If the state is [ConnectionState.done] and the error is not `null`, it calls the [error] callback.
-  /// If the state is [ConnectionState.waiting], it calls the [loading] callback.
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final snapshot = useAsyncSnapshot<int>();
-  /// final result = snapshot.whenOrNull(
-  ///   data: (data) => data.toString(),
-  ///   error: (error, stackTrace) => 'Error: $error',
-  /// );
-  /// ```
+  bool get isLoading => connectionState == ConnectionState.waiting;
+  bool get isIdle => connectionState == ConnectionState.none;
+  bool get isData => connectionState == ConnectionState.done && !hasError;
+  bool get isError => connectionState == ConnectionState.done && hasError;
+
+  R when<R>({
+    required AsyncIdleCallback<R> idle,
+    required AsyncDataCallback<R, T> data,
+    required AsyncErrorCallback<R> error,
+    required AsyncLoadingCallback<R> loading,
+  }) {
+    return value.when(
+      idle: idle,
+      data: data,
+      error: error,
+      loading: loading,
+    );
+  }
+
   R? whenOrNull<R>({
     AsyncIdleCallback<R?>? idle,
     AsyncDataCallback<R?, T>? data,
@@ -131,23 +133,35 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     );
   }
 
-  /// Returns the result of calling [value.whenOrNull] with the provided [data] and [error] callbacks.
-  ///
-  /// The [whenDataOrError] method returns the result of calling the [data] callback if the state is [ConnectionState.done] and the data is not `null`,
-  /// or the result of calling the [error] callback if the state is [ConnectionState.done] and the error is not `null`.
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final snapshot = useAsyncSnapshot<int>();
-  /// final result = snapshot.whenDataOrError(
-  ///   data: (data) => data.toString(),
-  ///   error: (error, stackTrace) => 'Error: $error',
-  /// );
-  /// ```
-  R? whenDataOrError<R>({
-    required AsyncDataCallback<R?, T>? data,
-    required AsyncErrorCallback<R?>? error,
+  R maybeWhen<R>({
+    AsyncIdleCallback<R?>? idle,
+    AsyncDataCallback<R?, T>? data,
+    AsyncErrorCallback<R?>? error,
+    AsyncLoadingCallback<R?>? loading,
+    required R Function() orElse,
   }) {
-    return value.whenOrNull(data: data, error: error);
+    return value.maybeWhen(
+      idle: idle,
+      data: data,
+      error: error,
+      loading: loading,
+      orElse: orElse,
+    );
+  }
+
+  R? whenError<R>(AsyncErrorCallback<R?>? error) {
+    return value.whenError(error);
+  }
+
+  R? whenData<R>(AsyncDataCallback<R?, T>? data) {
+    return value.whenData(data);
+  }
+
+  R? whenIdle<R>(AsyncIdleCallback<R?>? idle) {
+    return value.whenIdle(idle);
+  }
+
+  R? whenLoading<R>(AsyncLoadingCallback<R?>? loading) {
+    return value.whenLoading(loading);
   }
 }

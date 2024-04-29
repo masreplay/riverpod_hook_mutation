@@ -27,7 +27,8 @@ class HomePage extends HookWidget {
     return Column(
       children: [
         if (state.isLoading) const LinearProgressIndicator(),
-        state.value.when(
+        if (state.isLoading) const LinearProgressIndicator(),
+        state.when(
           idle: () {
             return const Text('Idle');
           },
@@ -42,19 +43,20 @@ class HomePage extends HookWidget {
           },
         ),
         FilledButton(
-          onPressed: () async {
-            // TODO(you): write loading state here
+          onPressed: () {
+            final messenger = ScaffoldMessenger.of(context);
 
-            await state(_greeting());
+            state.value.whenData((data) {});
 
-            state.whenDataOrError(
+            state.future(
+              _greeting(),
               data: (data) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('Data: $data')),
                 );
               },
               error: (error, stackTrace) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   SnackBar(content: Text('Error: $error')),
                 );
               },
