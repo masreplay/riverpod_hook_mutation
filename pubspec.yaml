@@ -4,9 +4,12 @@ version: 0.0.1
 homepage: https://github.com/masreplay/riverpod_mutation
 issue_tracker: https://github.com/masreplay/riverpod_mutation/issues
 documentation: https://riverpod.dev/getting-started
-topics: [riverpod, mutation, flutter, hook, useMutation]
 funding: [https://github.com/sponsors/masreply]
+topics: [riverpod, mutation, flutter, hook, useMutation]
 
+screenshots:
+  - description: "Usage"
+    path: screenshots/usage.png
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
