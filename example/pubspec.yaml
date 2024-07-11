@@ -10,13 +10,19 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_hooks: ^0.20.5
-  flutter_async_hook:
+  hooks_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+  riverpod_mutation:
     path: ../
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.9
+  custom_lint: ^0.6.4
+  riverpod_lint: ^2.3.10
 
 flutter:
   uses-material-design: true

@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
-import 'async_snapshot.dart';
+import 'async_snapshot_extension.dart';
 
 /// A custom hook that provides a [ValueNotifier] for managing asynchronous state.
 ///
-/// The [useAsyncSnapshot] hook can be used to create a [ValueNotifier] that holds an [AsyncSnapshot] of type [T].
+/// The [useMutation] hook can be used to create a [ValueNotifier] that holds an [AsyncSnapshot] of type [T].
 /// It takes an optional [data] parameter and an optional [state] parameter.
 /// Only one of them can be provided at a time.
 ///
@@ -19,7 +19,7 @@ import 'async_snapshot.dart';
 /// ```dart
 /// final snapshot = useAsyncSnapshot<int>(data: 42);
 /// ```
-ValueNotifier<AsyncSnapshot<T>> useAsyncSnapshot<T>({
+ValueNotifier<AsyncSnapshot<T>> useMutation<T>({
   T? data,
   AsyncSnapshot<T>? state,
 }) {

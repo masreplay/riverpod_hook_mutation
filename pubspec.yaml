@@ -1,7 +1,7 @@
-name: flutter_async_hook
+name: riverpod_mutation
 description: "Flutter hook for future async operations."
 version: 0.0.3
-homepage: "https://github.com/masreplay/flutter_async_hook"
+homepage: "https://github.com/masreplay/riverpod_mutation"
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -18,3 +18,27 @@ dev_dependencies:
   flutter_lints: ^3.0.0
 
 flutter:
+
+scripts:
+  g:
+    $script: rps gen build
+    $description: shortcut for gen build
+  w:
+    $script: rps gen watch
+    $description: shortcut for gen watch
+
+  get:
+    $script: fvm flutter pub get
+    $description: Get dependencies
+
+  gen:
+    watch:
+      $script: fvm dart run build_runner watch --delete-conflicting-outputs
+      $description: Generate files on save
+    build:
+      $script: fvm dart run build_runner build --delete-conflicting-outputs
+      $description: Generate files
+
+  fix-format:
+    $script: fvm dart fix --apply && fvm dart format -o write ./lib
+    $description: Fix code warnings and format code
