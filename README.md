@@ -1,7 +1,7 @@
 # Flutter Package README Template
 
-[![Pub](https://img.shields.io/pub/v/riverpod_mutation.svg)](https://pub.dev/packages/riverpod_mutation)
-[![GitHub stars](https://img.shields.io/github/stars/masreplay/riverpod_mutation.svg?style=social)](https://github.com/masreplay/riverpod_mutation)
+[![Pub](https://img.shields.io/pub/v/riverpod_hook_mutation.svg)](https://pub.dev/packages/riverpod_hook_mutation)
+[![GitHub stars](https://img.shields.io/github/stars/masreplay/riverpod_hook_mutation.svg?style=social)](https://github.com/masreplay/riverpod_hook_mutation)
 
 A package that provides a simple way to manage mutations in Riverpod
 
@@ -15,11 +15,11 @@ Fix the issue of riverpod mutation https://github.com/rrousselGit/riverpod/issue
 
 ## Getting Started
 
-In order to use this package, you need to add `riverpod_mutation` as a dependency in your `pubspec.yaml` file.
+In order to use this package, you need to add `riverpod_hook_mutation` as a dependency in your `pubspec.yaml` file.
 
 ```yaml
 dependencies:
-  riverpod_mutation: ^0.0.1
+  riverpod_hook_mutation: ^0.0.1
 ```
 
 Then, run `flutter pub get` to fetch the package.
@@ -27,14 +27,14 @@ Then, run `flutter pub get` to fetch the package.
 ## Usage
 
 ```dart
-import 'package:riverpod_mutation/riverpod_mutation.dart';
+import 'package:riverpod_hook_mutation/riverpod_hook_mutation.dart';
 
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod_mutation/riverpod_mutation.dart';
+import 'package:riverpod_hook_mutation/riverpod_hook_mutation.dart';
 
 part 'main.g.dart';
 
@@ -185,7 +185,7 @@ class ExampleScreen extends HookConsumerWidget {
 
 ## Documentation
 
-For more details, check out the [documentation](https://pub.dev/riverpod_mutation).
+For more details, check out the [documentation](https://pub.dev/riverpod_hook_mutation).
 
 ## Contributing
 

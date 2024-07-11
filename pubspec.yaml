@@ -1,10 +1,10 @@
-name: riverpod_mutation
+name: riverpod_hook_mutation
 description: "A package that provides a simple way to manage mutations in Riverpod"
 version: 0.0.1
-homepage: https://github.com/masreplay/riverpod_mutation
-issue_tracker: https://github.com/masreplay/riverpod_mutation/issues
+homepage: https://github.com/masreplay/riverpod_hook_mutation
+issue_tracker: https://github.com/masreplay/riverpod_hook_mutation/issues
 documentation: https://riverpod.dev/getting-started
-funding: [https://github.com/sponsors/masreply]
+funding: [https://github.com/sponsors/masreplay]
 topics: [riverpod, mutation, flutter, hook, use]
 
 screenshots:

@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
-import 'package:riverpod_mutation/riverpod_mutation.dart';
+import 'package:riverpod_hook_mutation/riverpod_hook_mutation.dart';
 
 part 'main.g.dart';
 

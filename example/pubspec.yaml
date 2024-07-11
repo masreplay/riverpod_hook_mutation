@@ -12,7 +12,7 @@ dependencies:
   flutter_hooks: ^0.20.5
   hooks_riverpod: ^2.5.1
   riverpod_annotation: ^2.3.5
-  riverpod_mutation:
+  riverpod_hook_mutation:
     path: ../
 
 dev_dependencies:

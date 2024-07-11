@@ -1,4 +1,4 @@
-library riverpod_mutation;
+library riverpod_hook_mutation;
 
 export 'src/async_snapshot_extension.dart';
 export 'src/deprecation.dart';
