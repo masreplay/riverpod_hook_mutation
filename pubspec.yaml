@@ -5,10 +5,14 @@ homepage: https://github.com/masreplay/riverpod_mutation
 issue_tracker: https://github.com/masreplay/riverpod_mutation/issues
 documentation: https://riverpod.dev/getting-started
 funding: [https://github.com/sponsors/masreply]
-topics: [riverpod, mutation, flutter, hook, useMutation]
+topics: [riverpod, mutation, flutter, hook, use]
 
 screenshots:
-  - description: "Usage"
+  - description: the definition of a mutation
+    path: screenshots/define.png
+  - description: the calling of a mutation
+    path: screenshots/call.png
+  - description: the usage of a mutation
     path: screenshots/usage.png
 
 environment:
