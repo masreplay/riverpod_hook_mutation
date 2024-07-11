@@ -1,7 +1,12 @@
 name: riverpod_mutation
-description: "Flutter hook for future async operations."
-version: 0.0.3
-homepage: "https://github.com/masreplay/riverpod_mutation"
+description: "A package that provides a simple way to manage mutations in Riverpod"
+version: 0.0.1
+homepage: https://github.com/masreplay/riverpod_mutation
+issue_tracker: https://github.com/masreplay/riverpod_mutation/issues
+documentation: https://riverpod.dev/getting-started
+topics: [riverpod, mutation, flutter, hook, useMutation]
+funding: [https://github.com/sponsors/masreply]
+
 
 environment:
   sdk: ">=3.3.0 <4.0.0"
@@ -39,6 +44,9 @@ scripts:
       $script: fvm dart run build_runner build --delete-conflicting-outputs
       $description: Generate files
 
+  publish:
+    $script: fvm flutter pub publish
+    $description: Publish package
   fix-format:
     $script: fvm dart fix --apply && fvm dart format -o write ./lib
     $description: Fix code warnings and format code

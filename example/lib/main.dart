@@ -75,8 +75,7 @@ class Example extends _$Example {
     return Repository().fetchTodos();
   }
 
-  @mutation
-  Future<TODO> createTodo() async {
+  Future<TODO> addTodo() async {
     final result = await Repository().createTodo();
     ref.invalidateSelf();
     return result;
@@ -91,19 +90,19 @@ class ExampleScreen extends HookConsumerWidget {
     final provider = exampleProvider;
     final todos = ref.watch(provider);
 
-    final createTodoState = useMutation<TODO>();
+    final addTodo = useMutation<TODO>();
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        child: createTodoState.maybeWhen(
+        child: addTodo.maybeWhen(
           loading: () => const CircularProgressIndicator(),
           orElse: () => const Icon(Icons.add),
         ),
         onPressed: () {
           final notifier = ref.read(provider.notifier);
 
-          createTodoState.future(
-            notifier.createTodo(),
+          addTodo.future(
+            notifier.addTodo(),
             data: (data) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
