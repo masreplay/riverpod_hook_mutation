@@ -94,9 +94,11 @@ class ExampleScreen extends HookConsumerWidget {
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
-        child: addTodo.maybeWhen(
+        child: addTodo.when(
+          idle: () => const Icon(Icons.add),
+          data: (data) => const Icon(Icons.add),
+          error: (error, stackTrace) => const Icon(Icons.add_circle_outline),
           loading: () => const CircularProgressIndicator(),
-          orElse: () => const Icon(Icons.add),
         ),
         onPressed: () {
           final notifier = ref.read(provider.notifier);
