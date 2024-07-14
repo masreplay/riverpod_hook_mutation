@@ -1,4 +1,6 @@
-# Flutter Package README Template
+# Riverpod and hook mutation package
+
+[![License](https://img.shields.io/github/license/masreplay/riverpod_hook_mutation.svg)](
 
 [![Pub](https://img.shields.io/pub/v/riverpod_hook_mutation.svg)](https://pub.dev/packages/riverpod_hook_mutation)
 [![GitHub stars](https://img.shields.io/github/stars/masreplay/riverpod_hook_mutation.svg?style=social)](https://github.com/masreplay/riverpod_hook_mutation)
@@ -185,7 +187,7 @@ class ExampleScreen extends HookConsumerWidget {
 
 ## Documentation
 
-For more details, check out the [documentation](https://pub.dev/riverpod_hook_mutation).
+For more details, check out the [documentation](https://pub.dev/documentation/riverpod_hook_mutation/latest/).
 
 ## Contributing
 
