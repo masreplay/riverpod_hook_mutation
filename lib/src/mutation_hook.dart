@@ -57,19 +57,19 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// final snapshot = useAsyncSnapshot<int>();
   /// snapshot(fetchData());
   /// ```
-  Future<void> call(Future<T> future) async {
+  Future<void> call(Future<T> future) {
     value = AsyncSnapshot<T>.waiting();
 
-    try {
-      final result = await future;
-      value = AsyncSnapshot<T>.withData(ConnectionState.done, result);
-    } catch (e) {
-      value = AsyncSnapshot<T>.withError(
-        ConnectionState.done,
-        e,
-        StackTrace.current,
-      );
-    }
+    return future.then(
+      (value) => AsyncSnapshot<T>.withData(ConnectionState.done, value),
+      onError: (error, stackTrace) {
+        value = AsyncSnapshot<T>.withError(
+          ConnectionState.done,
+          error,
+          stackTrace,
+        );
+      },
+    );
   }
 
   /// futures a [Future] and returns the result based on the current value of the [ValueNotifier].
@@ -88,9 +88,9 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     AsyncDataCallback<R?, T>? data,
     AsyncErrorCallback<R?>? error,
   }) async {
+    // TODO(masreplay): fix mounted future issue
     await loading?.call();
-    await call(future);
-    return value.whenOrNull(data: data, error: error);
+    return call(future).then((_) => value.whenOrNull(data: data, error: error));
   }
 
   /// [AsyncSnapshot] extension methods.

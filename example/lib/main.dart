@@ -43,17 +43,13 @@ class Repository {
   }
 
   Future<TODO> createTodo() async {
-    return Future.delayed(const Duration(seconds: 1), () {
-      if (Random().nextBool()) {
-        throw Exception('Failed to create todo');
-      } else {
-        final todo = TODO(
-          title: 'Buy cheese ${Random().nextInt(1000000)}',
-          completed: false,
-        );
-        _todos.add(todo);
-        return todo;
-      }
+    return Future.delayed(const Duration(seconds: 5), () {
+      final todo = TODO(
+        title: 'Buy cheese ${Random().nextInt(1000000)}',
+        completed: false,
+      );
+      _todos.add(todo);
+      return todo;
     });
   }
 }
@@ -90,37 +86,22 @@ class ExampleScreen extends HookConsumerWidget {
     final provider = exampleProvider;
     final todos = ref.watch(provider);
 
-    final addTodo = useMutation<TODO>();
-
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        child: addTodo.when(
-          idle: () => const Icon(Icons.add),
-          data: (data) => const Icon(Icons.add),
-          error: (error, stackTrace) => const Icon(Icons.add_circle_outline),
-          loading: () => const CircularProgressIndicator(),
-        ),
-        onPressed: () {
-          final notifier = ref.read(provider.notifier);
-
-          addTodo.future(
-            notifier.addTodo(),
-            data: (data) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Created todo: ${data.title}'),
+      appBar: AppBar(
+        actions: [
+          FloatingActionButton.small(
+            child: const Icon(Icons.add),
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) {
+                    return const AddScreen();
+                  },
                 ),
               );
             },
-            error: (error, stackTrace) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to create todo: $error'),
-                ),
-              );
-            },
-          );
-        },
+          )
+        ],
       ),
       body: todos.when(
         data: (data) {
@@ -147,6 +128,57 @@ class ExampleScreen extends HookConsumerWidget {
             child: CircularProgressIndicator(),
           );
         },
+      ),
+    );
+  }
+}
+
+class AddScreen extends HookConsumerWidget {
+  const AddScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final addTodo = useMutation<TODO>();
+
+    return Scaffold(
+      appBar: AppBar(
+        actions: [
+          FloatingActionButton.small(
+            child: addTodo.when(
+              idle: () {
+                return const Icon(Icons.add);
+              },
+              data: (data) {
+                return const Icon(Icons.add);
+              },
+              error: (error, stackTrace) {
+                return const Icon(Icons.add_circle_outline);
+              },
+              loading: CircularProgressIndicator.new,
+            ),
+            onPressed: () {
+              final notifier = ref.read(exampleProvider.notifier);
+
+              addTodo.future(
+                notifier.addTodo(),
+                data: (data) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Created todo: ${data.title}'),
+                    ),
+                  );
+                },
+                error: (error, stackTrace) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to create todo: $error'),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
     );
   }
