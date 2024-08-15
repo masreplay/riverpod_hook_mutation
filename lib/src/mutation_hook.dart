@@ -57,12 +57,16 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// final snapshot = useAsyncSnapshot<int>();
   /// snapshot(fetchData());
   /// ```
-  Future<void> call(Future<T> future) {
+  Future<void> call(bool Function() isMounted, Future<T> future) {
     value = AsyncSnapshot<T>.waiting();
 
     return future.then(
-      (value) => AsyncSnapshot<T>.withData(ConnectionState.done, value),
+      (result) {
+        if (!isMounted()) return;
+        value = AsyncSnapshot<T>.withData(ConnectionState.done, result);
+      },
       onError: (error, stackTrace) {
+        if (!isMounted()) return;
         value = AsyncSnapshot<T>.withError(
           ConnectionState.done,
           error,
@@ -77,6 +81,8 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// The [future] method calls the [call] method with the provided [future],
   /// then returns the result of calling [value.whenOrNull] with the provided [data] and [error] callbacks.
   ///
+  ///[isMounted] is a function that returns true if the widget is still mounted.
+  ///
   /// Example usage:
   /// ```dart
   /// final snapshot = useAsyncSnapshot<int>();
@@ -84,13 +90,17 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// ```
   Future<R?> future<R>(
     Future<T> future, {
+    required bool Function() isMounted,
     FutureOr<R?> Function()? loading,
     AsyncDataCallback<R?, T>? data,
     AsyncErrorCallback<R?>? error,
   }) async {
     // TODO(masreplay): fix mounted future issue
     await loading?.call();
-    return call(future).then((_) => value.whenOrNull(data: data, error: error));
+    if (!isMounted()) return null;
+    await call(isMounted, future);
+    if (!isMounted()) return null;
+    return value.whenOrNull(data: data, error: error);
   }
 
   /// [AsyncSnapshot] extension methods.

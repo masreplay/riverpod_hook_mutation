@@ -161,6 +161,7 @@ class AddScreen extends HookConsumerWidget {
 
               addTodo.future(
                 notifier.addTodo(),
+                isMounted: () => context.mounted,
                 data: (data) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
