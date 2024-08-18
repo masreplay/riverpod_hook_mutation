@@ -1,6 +1,6 @@
 name: riverpod_hook_mutation
 description: "A package that provides a simple way to manage mutations in Riverpod"
-version: 0.0.3
+version: 0.0.5
 homepage: https://github.com/masreplay/riverpod_hook_mutation
 issue_tracker: https://github.com/masreplay/riverpod_hook_mutation/issues
 documentation: https://riverpod.dev/getting-started
@@ -54,6 +54,7 @@ scripts:
   publish:
     $script: fvm flutter pub publish
     $description: Publish package
+
   fix-format:
     $script: fvm dart fix --apply && fvm dart format -o write ./lib
     $description: Fix code warnings and format code

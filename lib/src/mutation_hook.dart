@@ -57,57 +57,61 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// final snapshot = useAsyncSnapshot<int>();
   /// snapshot(fetchData());
   /// ```
-
-  Future<T> call(Future<T> future) async {
+  Future<T> call(
+    Future<T> future, {
+    required bool Function() mounted,
+  }) async {
     value = AsyncSnapshot<T>.waiting();
 
-    return future.then(
-      (result) {
-        value = AsyncSnapshot<T>.withData(
-          ConnectionState.done,
-          result,
-        );
-        return result;
-      },
-      onError: (e, stackTrace) {
-        value = AsyncSnapshot<T>.withError(
-          ConnectionState.done,
-          e,
-          stackTrace,
-        );
-        return Future.error(e, stackTrace);
-      },
-    );
+    try {
+      final result = await future;
+
+      if (!mounted()) return result;
+
+      value = AsyncSnapshot<T>.withData(
+        ConnectionState.done,
+        result,
+      );
+      return result;
+    } catch (e, stackTrace) {
+      value = AsyncSnapshot<T>.withError(
+        ConnectionState.done,
+        e,
+        stackTrace,
+      );
+      rethrow;
+    }
   }
 
-  @Deprecated('Use the mutate method instead.')
-  Future<T> mutate(Future<T> future) async {
-    return call(future);
-  }
-
-  /// futures a [Future] and returns the result based on the current value of the [ValueNotifier].
-  ///
-  /// The [future] method calls the [call] method with the provided [future],
-  /// then returns the result of calling [value.whenOrNull] with the provided [data] and [error] callbacks.
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final snapshot = useAsyncSnapshot<int>();
-  /// final result = await snapshot.future(fetchData(), data: (data) => data.toString());
-  /// ```
-  @Deprecated('Use the call method instead.')
-  Future<R?> future<R>(
+  Future<R?> mutate<R>(
     Future<T> future, {
+    required bool Function() mounted,
     R Function()? loading,
     AsyncDataCallback<R?, T>? data,
     AsyncErrorCallback<R?>? error,
   }) async {
-    await call(future);
-    return value.whenOrNull(
-      loading: loading,
-      data: data,
-      error: error,
-    );
+    value = AsyncSnapshot<T>.waiting();
+    loading?.call();
+
+    try {
+      final result = await future;
+
+      if (!mounted()) return null;
+
+      value = AsyncSnapshot<T>.withData(
+        ConnectionState.done,
+        result,
+      );
+
+      return data?.call(result);
+    } catch (e, stackTrace) {
+      value = AsyncSnapshot<T>.withError(
+        ConnectionState.done,
+        e,
+        stackTrace,
+      );
+      return error?.call(e, stackTrace);
+    }
   }
 
   /// [AsyncSnapshot] extension methods.

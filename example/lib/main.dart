@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -64,6 +65,13 @@ class TodoModel {
     required this.title,
     required this.completed,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'completed': completed,
+    };
+  }
 }
 
 @riverpod
@@ -78,6 +86,8 @@ class Todos extends _$Todos {
   Future<TodoModel> addTodo() async {
     final result = await _repository.createTodo();
     ref.invalidateSelf();
+
+    if (kDebugMode) print(result.toJson());
     return result;
   }
 }
@@ -149,31 +159,53 @@ class ItemAddScreen extends HookConsumerWidget {
       appBar: AppBar(),
       body: Column(
         children: [
+          addTodo.when(
+            idle: () {
+              return const Icon(Icons.add);
+            },
+            data: (data) {
+              return const Icon(Icons.add);
+            },
+            error: (error, stackTrace) {
+              return const Icon(Icons.add_circle_outline);
+            },
+            loading: CircularProgressIndicator.new,
+          ),
           FilledButton(
-            child: addTodo.when(
-              idle: () {
-                return const Icon(Icons.add);
-              },
-              data: (data) {
-                return const Icon(Icons.add);
-              },
-              error: (error, stackTrace) {
-                return const Icon(Icons.add_circle_outline);
-              },
-              loading: CircularProgressIndicator.new,
-            ),
+            child: const Text('Add .call'),
+            onPressed: () {
+              Navigator.of(context).pop();
+
+              final notifier = ref.read(todosProvider.notifier);
+              addTodo(
+                notifier.addTodo(),
+                mounted: () => context.mounted,
+              );
+            },
+          ),
+          FilledButton(
+            child: const Text('Add .mutate'),
             onPressed: () async {
               final notifier = ref.read(todosProvider.notifier);
 
-              // TODO(you): handle loading state here
-
-              await addTodo(notifier.addTodo());
-
-              if (!context.mounted) return;
-
-              addTodo.whenMutated(
-                data: (data) {},
-                error: (error, stackTrace) {},
+              await addTodo.mutate(
+                notifier.addTodo(),
+                mounted: () => context.mounted,
+                loading: Navigator.of(context).pop,
+                data: (data) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Todo added: ${data.title}'),
+                    ),
+                  );
+                },
+                error: (error, stackTrace) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: $error'),
+                    ),
+                  );
+                },
               );
             },
           ),
