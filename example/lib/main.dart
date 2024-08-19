@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -7,44 +8,46 @@ import 'package:riverpod_hook_mutation/riverpod_hook_mutation.dart';
 
 part 'main.g.dart';
 
-void main(List<String> args) {
+Future<void> main() async {
   runApp(
     const ProviderScope(
-      child: MaterialApp(home: ExampleScreen()),
+      child: MaterialApp(
+        home: TodosScreen(),
+      ),
     ),
   );
 }
 
-class Repository {
-  static final Repository _instance = Repository._internal();
+class TodoRepository {
+  static final TodoRepository _instance = TodoRepository._internal();
 
-  factory Repository() => _instance;
+  factory TodoRepository() => _instance;
 
-  Repository._internal();
+  TodoRepository._internal();
 
   final _todos = [
-    TODO(
+    TodoModel(
       title: 'Buy milk',
       completed: false,
     ),
-    TODO(
+    TodoModel(
       title: 'Buy eggs',
       completed: true,
     ),
-    TODO(
+    TodoModel(
       title: 'Buy bread',
       completed: false,
     ),
   ];
 
-  Future<List<TODO>> fetchTodos() async {
-    await Future.delayed(const Duration(seconds: 1));
+  Future<List<TodoModel>> fetchTodos() async {
+    await Future.delayed(const Duration(seconds: 3));
     return _todos;
   }
 
-  Future<TODO> createTodo() async {
-    return Future.delayed(const Duration(seconds: 5), () {
-      final todo = TODO(
+  Future<TodoModel> createTodo() async {
+    return Future.delayed(const Duration(seconds: 3), () {
+      final todo = TodoModel(
         title: 'Buy cheese ${Random().nextInt(1000000)}',
         completed: false,
       );
@@ -54,48 +57,60 @@ class Repository {
   }
 }
 
-class TODO {
+class TodoModel {
   final String title;
   final bool completed;
 
-  TODO({
+  TodoModel({
     required this.title,
     required this.completed,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'completed': completed,
+    };
+  }
 }
 
 @riverpod
-class Example extends _$Example {
+class Todos extends _$Todos {
+  TodoRepository get _repository => TodoRepository();
+
   @override
-  Future<List<TODO>> build() {
-    return Repository().fetchTodos();
+  Future<List<TodoModel>> build() {
+    return _repository.fetchTodos();
   }
 
-  Future<TODO> addTodo() async {
-    final result = await Repository().createTodo();
+  Future<TodoModel> addTodo() async {
+    final result = await _repository.createTodo();
     ref.invalidateSelf();
+
+    if (kDebugMode) print(result.toJson());
     return result;
   }
 }
 
-class ExampleScreen extends HookConsumerWidget {
-  const ExampleScreen({super.key});
+class TodosScreen extends HookConsumerWidget {
+  const TodosScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final provider = exampleProvider;
+    final provider = todosProvider;
     final todos = ref.watch(provider);
 
     return Scaffold(
       appBar: AppBar(
         actions: [
           FloatingActionButton.small(
+            heroTag: null,
             child: const Icon(Icons.add),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (_) {
-                    return const AddScreen();
+                    return const ItemAddScreen();
                   },
                 ),
               );
@@ -133,46 +148,61 @@ class ExampleScreen extends HookConsumerWidget {
   }
 }
 
-class AddScreen extends HookConsumerWidget {
-  const AddScreen({super.key});
+class ItemAddScreen extends HookConsumerWidget {
+  const ItemAddScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final addTodo = useMutation<TODO>();
+    final addTodo = useMutation<TodoModel>();
 
     return Scaffold(
-      appBar: AppBar(
-        actions: [
-          FloatingActionButton.small(
-            child: addTodo.when(
-              idle: () {
-                return const Icon(Icons.add);
-              },
-              data: (data) {
-                return const Icon(Icons.add);
-              },
-              error: (error, stackTrace) {
-                return const Icon(Icons.add_circle_outline);
-              },
-              loading: CircularProgressIndicator.new,
-            ),
+      appBar: AppBar(),
+      body: Column(
+        children: [
+          addTodo.when(
+            idle: () {
+              return const Icon(Icons.add);
+            },
+            data: (data) {
+              return const Icon(Icons.add);
+            },
+            error: (error, stackTrace) {
+              return const Icon(Icons.add_circle_outline);
+            },
+            loading: CircularProgressIndicator.new,
+          ),
+          FilledButton(
+            child: const Text('Add .call'),
             onPressed: () {
-              final notifier = ref.read(exampleProvider.notifier);
+              Navigator.of(context).pop();
 
-              addTodo.future(
+              final notifier = ref.read(todosProvider.notifier);
+              addTodo(
                 notifier.addTodo(),
-                isMounted: () => context.mounted,
+                mounted: () => context.mounted,
+              );
+            },
+          ),
+          FilledButton(
+            child: const Text('Add .mutate'),
+            onPressed: () async {
+              final notifier = ref.read(todosProvider.notifier);
+
+              await addTodo.mutate(
+                notifier.addTodo(),
+                mounted: () => context.mounted,
+                loading: Navigator.of(context).pop,
                 data: (data) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Created todo: ${data.title}'),
+                      content: Text('Todo added: ${data.title}'),
                     ),
                   );
                 },
                 error: (error, stackTrace) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Failed to create todo: $error'),
+                      content: Text('Error: $error'),
                     ),
                   );
                 },

@@ -11,9 +11,16 @@ typedef AsyncIdleCallback<R> = R Function();
 typedef AsyncLoadingCallback<R> = R Function();
 
 extension AsyncSnapshotExtension<T> on AsyncSnapshot<T> {
+  /// Returns the [ConnectionState] of the [AsyncSnapshot].
   bool get isLoading => connectionState == ConnectionState.waiting;
+
+  /// Returns `true` if the [AsyncSnapshot] is in the `none` state.
   bool get isIdle => connectionState == ConnectionState.none;
+
+  /// Returns `true` if the [AsyncSnapshot] is in the `done` state and has data.
   bool get isData => connectionState == ConnectionState.done && !hasError;
+
+  /// Returns `true` if the [AsyncSnapshot] is in the `done` state and has an error.
   bool get isError => connectionState == ConnectionState.done && hasError;
 
   R when<R>({

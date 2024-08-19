@@ -57,62 +57,88 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   /// final snapshot = useAsyncSnapshot<int>();
   /// snapshot(fetchData());
   /// ```
-  Future<void> call(bool Function() isMounted, Future<T> future) {
+  Future<T> call(
+    Future<T> future, {
+    required bool Function() mounted,
+  }) async {
     value = AsyncSnapshot<T>.waiting();
 
-    return future.then(
-      (result) {
-        if (!isMounted()) return;
-        value = AsyncSnapshot<T>.withData(ConnectionState.done, result);
-      },
-      onError: (error, stackTrace) {
-        if (!isMounted()) return;
-        value = AsyncSnapshot<T>.withError(
-          ConnectionState.done,
-          error,
-          stackTrace,
-        );
-      },
-    );
+    try {
+      final result = await future;
+
+      if (!mounted()) return result;
+
+      value = AsyncSnapshot<T>.withData(
+        ConnectionState.done,
+        result,
+      );
+      return result;
+    } catch (e, stackTrace) {
+      value = AsyncSnapshot<T>.withError(
+        ConnectionState.done,
+        e,
+        stackTrace,
+      );
+      rethrow;
+    }
   }
 
-  /// futures a [Future] and returns the result based on the current value of the [ValueNotifier].
-  ///
-  /// The [future] method calls the [call] method with the provided [future],
-  /// then returns the result of calling [value.whenOrNull] with the provided [data] and [error] callbacks.
-  ///
-  ///[isMounted] is a function that returns true if the widget is still mounted.
-  ///
-  /// Example usage:
-  /// ```dart
-  /// final snapshot = useAsyncSnapshot<int>();
-  /// final result = await snapshot.future(fetchData(), data: (data) => data.toString());
-  /// ```
-  Future<R?> future<R>(
+  Future<R?> mutate<R>(
     Future<T> future, {
-    required bool Function() isMounted,
-    FutureOr<R?> Function()? loading,
+    required bool Function() mounted,
+    R Function()? loading,
     AsyncDataCallback<R?, T>? data,
     AsyncErrorCallback<R?>? error,
   }) async {
-    // TODO(masreplay): fix mounted future issue
-    await loading?.call();
-    if (!isMounted()) return null;
-    await call(isMounted, future);
-    if (!isMounted()) return null;
-    return value.whenOrNull(data: data, error: error);
+    value = AsyncSnapshot<T>.waiting();
+    loading?.call();
+
+    try {
+      final result = await future;
+
+      if (!mounted()) return null;
+
+      value = AsyncSnapshot<T>.withData(
+        ConnectionState.done,
+        result,
+      );
+
+      return data?.call(result);
+    } catch (e, stackTrace) {
+      value = AsyncSnapshot<T>.withError(
+        ConnectionState.done,
+        e,
+        stackTrace,
+      );
+      return error?.call(e, stackTrace);
+    }
   }
 
   /// [AsyncSnapshot] extension methods.
   ConnectionState get connectionState => value.connectionState;
+
+  /// Returns `true` if the [AsyncSnapshot] has data.
   bool get hasError => value.hasError;
+
+  /// Returns the error of the [AsyncSnapshot].
   Object? get error => value.error;
+
+  /// Returns the stack trace of the [AsyncSnapshot].
   StackTrace? get stackTrace => value.stackTrace;
+
+  /// Returns the data of the [AsyncSnapshot].
   T? get data => value.data;
 
+  /// Returns `true` if the [AsyncSnapshot] is in the `waiting` state.
   bool get isLoading => connectionState == ConnectionState.waiting;
+
+  /// Returns `true` if the [AsyncSnapshot] is in the `none` state.
   bool get isIdle => connectionState == ConnectionState.none;
+
+  /// Returns `true` if the [AsyncSnapshot] is in the `done` state and has data.
   bool get isData => connectionState == ConnectionState.done && !hasError;
+
+  /// Returns `true` if the [AsyncSnapshot] is in the `done` state and has an error.
   bool get isError => connectionState == ConnectionState.done && hasError;
 
   R when<R>({
@@ -173,5 +199,41 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
 
   R? whenLoading<R>(AsyncLoadingCallback<R?>? loading) {
     return value.whenLoading(loading);
+  }
+
+  /// Calls the provided callbacks based on the state of the mutation.
+  ///
+  /// The [data] callback is called when the mutation has completed successfully and contains the resulting data.
+  /// The [error] callback is called when the mutation has encountered an error and contains the error and stack trace.
+  ///
+  /// Throws an exception if called before the mutation is done, indicating that this function can only be called after the mutation is done and is used for data or error handling.
+  /// Example:
+  /// ```dart
+  /// final mutation = useMutation<String>();
+  ///
+  /// mutation.mutate('data');
+  ///
+  /// final result = whenMutated<String>(
+  ///   data: (data) {
+  ///     print('Mutation completed successfully. Result: $data');
+  ///     return 'Success';
+  ///   },
+  ///   error: (error) {
+  ///     print('Mutation encountered an error: $error');
+  ///     return 'Error';
+  ///   },
+  /// );
+  /// ```
+  R whenMutated<R>({
+    required AsyncDataCallback<R, T> data,
+    required AsyncErrorCallback<R> error,
+  }) {
+    return maybeWhen<R>(
+      orElse: () {
+        throw Exception('Cannot call whenMutated before the mutation is done.');
+      },
+      data: data,
+      error: error,
+    );
   }
 }
