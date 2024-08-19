@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
@@ -96,6 +97,8 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     try {
       final result = await future;
 
+      if (kDebugMode) print('[riverpod_hook_mutation] Data: $result');
+
       if (!mounted()) return null;
 
       value = AsyncSnapshot<T>.withData(
@@ -105,6 +108,10 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
 
       return data?.call(result);
     } catch (e, stackTrace) {
+      if (kDebugMode) print('[riverpod_hook_mutation] Error: $e');
+
+      if (!mounted()) return null;
+      
       value = AsyncSnapshot<T>.withError(
         ConnectionState.done,
         e,
