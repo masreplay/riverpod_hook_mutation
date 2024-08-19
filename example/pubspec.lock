@@ -513,7 +513,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "0.0.3"
+    version: "0.0.5"
   riverpod_lint:
     dependency: "direct dev"
     description:
