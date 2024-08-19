@@ -84,6 +84,7 @@ class Todos extends _$Todos {
   }
 
   Future<TodoModel> addTodo() async {
+    throw Exception();
     final result = await _repository.createTodo();
     ref.invalidateSelf();
 
@@ -174,13 +175,21 @@ class ItemAddScreen extends HookConsumerWidget {
           FilledButton(
             child: const Text('Add .call'),
             onPressed: () {
-              Navigator.of(context).pop();
+              // Navigator.of(context).pop();
 
               final notifier = ref.read(todosProvider.notifier);
               addTodo(
                 notifier.addTodo(),
                 mounted: () => context.mounted,
-              );
+              )
+                  .then((value) => {print('object')})
+                  .onError((error, stackTrace) => {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error: $error'),
+                          ),
+                        )
+                      });
             },
           ),
           FilledButton(
