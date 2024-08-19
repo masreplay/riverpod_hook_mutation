@@ -67,6 +67,8 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     try {
       final result = await future;
 
+      if (kDebugMode) print('[riverpod_hook_mutation] Data: $result');
+
       if (!mounted()) return result;
 
       value = AsyncSnapshot<T>.withData(
@@ -75,6 +77,10 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
       );
       return result;
     } catch (e, stackTrace) {
+      if (kDebugMode) print('[riverpod_hook_mutation] Error: $e');
+
+      if (!mounted()) rethrow;
+
       value = AsyncSnapshot<T>.withError(
         ConnectionState.done,
         e,
@@ -111,7 +117,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
       if (kDebugMode) print('[riverpod_hook_mutation] Error: $e');
 
       if (!mounted()) return null;
-      
+
       value = AsyncSnapshot<T>.withError(
         ConnectionState.done,
         e,
