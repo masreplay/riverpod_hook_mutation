@@ -167,7 +167,7 @@ class ItemAddScreen extends HookConsumerWidget {
               return const Icon(Icons.add);
             },
             error: (error, stackTrace) {
-              return const Icon(Icons.add_circle_outline);
+              return const Icon(Icons.error);
             },
             loading: CircularProgressIndicator.new,
           ),
