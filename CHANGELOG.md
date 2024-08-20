@@ -16,7 +16,8 @@
 * Remove .future function, use .call and .whenMutated instead
 * Add docs
 
-
-
 ## 0.0.5
 * Fix the bug for reallllllllll
+
+## 0.0.6
+* Fix is mounted crashed when error occurred
