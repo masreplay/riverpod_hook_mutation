@@ -9,127 +9,160 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 void main() {
   group('use Mutation ', () {
+    Widget build<T>({
+      AsyncSnapshot<T>? state,
+      T? data,
+    }) {
+      return ProviderScope(
+        child: HookConsumer(
+          builder: (c, ref, child) {
+            final mutation = useMutation(
+              state: state,
+              data: data,
+            );
+            return Column(
+              children: [
+                Text(
+                  mutation.value.connectionState.toString(),
+                  textDirection: TextDirection.ltr,
+                ),
+                if (mutation.isData)
+                  Text(
+                    mutation.value.data.toString(),
+                    textDirection: TextDirection.ltr,
+                  ),
+                if (mutation.hasError)
+                  Text(
+                    mutation.value.error.toString(),
+                    textDirection: TextDirection.ltr,
+                  ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
     testWidgets('create mutation with noting state as initial value ',
         (tester) async {
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation();
-              return Text(
-                mutation.value.connectionState.toString(),
-                textDirection: TextDirection.ltr,
-              );
-            },
-          ),
-        );
-      }
-
+      ///when
       await tester.pumpWidget(build());
 
+      ///then
       expect(find.text('ConnectionState.none'), findsOneWidget);
+      expect(find.byType(Text), findsOneWidget);
     });
 
     testWidgets('create mutation with data as initial value ', (tester) async {
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation(data: 42);
-              return Text(
-                mutation.value.connectionState.toString(),
-                textDirection: TextDirection.ltr,
-              );
-            },
-          ),
-        );
-      }
+      ///given
+      const data = 42;
 
-      await tester.pumpWidget(build());
+      ///when
+      await tester.pumpWidget(build(
+        data: 42,
+      ));
 
+      ///then
       expect(find.text('ConnectionState.done'), findsOneWidget);
+      expect(find.text(data.toString()), findsOneWidget);
     });
 
     testWidgets('create mutation with data as initial state', (tester) async {
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation(
-                  state:
-                      const AsyncSnapshot.withData(ConnectionState.done, 42));
-              return Text(
-                mutation.value.connectionState.toString(),
-                textDirection: TextDirection.ltr,
-              );
-            },
+      ///given
+      const data = 42;
+
+      ///when
+      await tester.pumpWidget(
+        build(
+          state: const AsyncSnapshot.withData(
+            ConnectionState.done,
+            data,
           ),
-        );
-      }
+        ),
+      );
 
-      await tester.pumpWidget(build());
-
+      ///then
       expect(find.text('ConnectionState.done'), findsOneWidget);
+      expect(find.text(data.toString()), findsOneWidget);
     });
 
     testWidgets('create mutation with error as initial state ', (tester) async {
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation(
-                state: AsyncSnapshot.withError(
-                  ConnectionState.done,
-                  'error',
-                  StackTrace.current,
-                ),
-              );
-              return Text(
-                '${mutation.value.connectionState} - ${mutation.value.error}',
-                textDirection: TextDirection.ltr,
-              );
-            },
-          ),
-        );
-      }
+      ///given
+      const error = 'error';
 
-      await tester.pumpWidget(build());
+      ///when
+      await tester.pumpWidget(build(
+        state: AsyncSnapshot.withError(
+          ConnectionState.done,
+          error,
+          StackTrace.current,
+        ),
+      ));
 
-      expect(find.text('ConnectionState.done - error'), findsOneWidget);
+      ///then
+      expect(find.text('ConnectionState.done'), findsOneWidget);
+      expect(find.text(error), findsOneWidget);
     });
 
     testWidgets('create mutation with loading as initial state',
         (tester) async {
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation =
-                  useMutation(state: const AsyncSnapshot.waiting());
-              return mutation.isLoading
-                  ? const Text(
-                      'loading',
-                      textDirection: TextDirection.ltr,
-                    )
-                  : Text(
-                      mutation.connectionState.toString(),
-                      textDirection: TextDirection.ltr,
-                    );
-            },
-          ),
-        );
-      }
+      ///when
+      await tester.pumpWidget(build(
+        state: const AsyncSnapshot<int>.waiting(),
+      ));
 
-      await tester.pumpWidget(build());
-
-      expect(find.text('loading'), findsOneWidget);
+      ///then
+      expect(find.text('ConnectionState.waiting'), findsOneWidget);
+      expect(find.byType(Text), findsOneWidget);
     });
   });
 
   group('Reload Function', () {
-    testWidgets('when initial state is data expected nothing', (tester) async {
-      const initialData = 42;
+    Widget reloadWidget<T>(
+      Function(AsyncSnapshot<T>) onStateChanged, {
+      T? initialData,
+      AsyncSnapshot<T>? state,
+    }) {
+      return ProviderScope(
+        child: HookConsumer(
+          builder: (c, ref, child) {
+            final mutation = useMutation(data: initialData, state: state);
 
+            useEffect(() {
+              onStateChanged(mutation.value);
+
+              listener() {
+                onStateChanged(mutation.value);
+              }
+
+              mutation.addListener(listener);
+              return () => mutation.removeListener(listener);
+            });
+
+            return Row(
+              textDirection: TextDirection.ltr,
+              children: [
+                GestureDetector(
+                  onTap: mutation.reload,
+                  child: const Icon(
+                    Icons.clear,
+                    textDirection: TextDirection.ltr,
+                  ),
+                ),
+                Text(
+                  mutation.value.connectionState.toString(),
+                  textDirection: TextDirection.ltr,
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    testWidgets('when initial state is data expected nothing', (tester) async {
+      ///given
+      const initialData = 42;
       AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
 
       await tester.pumpWidget(reloadWidget(
@@ -144,14 +177,17 @@ void main() {
         const AsyncSnapshot.withData(ConnectionState.done, initialData),
       );
 
+      ///when
       await tester.tap(find.byIcon(Icons.clear));
 
       await tester.pump();
 
+      ///then
       expect(snapshot, const AsyncSnapshot.nothing());
     });
 
     testWidgets('when initial data is error expected nothing', (tester) async {
+      /// given
       AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
 
       await tester.pumpWidget(reloadWidget(
@@ -164,16 +200,21 @@ void main() {
         },
       ));
 
-      expect(snapshot, const AsyncSnapshot.withError(ConnectionState.done, 'error'));
+      expect(snapshot,
+          const AsyncSnapshot.withError(ConnectionState.done, 'error'));
 
+      ///when
       await tester.tap(find.byIcon(Icons.clear));
 
       await tester.pump();
 
+      ///then
       expect(snapshot, const AsyncSnapshot.nothing());
     });
 
-    testWidgets('when initial state is loading expected loading', (tester) async {
+    testWidgets('when initial state is loading expected loading',
+        (tester) async {
+      /// given
       AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
 
       await tester.pumpWidget(reloadWidget(
@@ -184,16 +225,171 @@ void main() {
       ));
       expect(snapshot.connectionState, ConnectionState.waiting);
 
+      ///when
       await tester.tap(find.byIcon(Icons.clear));
 
       await tester.pump();
 
+      ///then
       expect(snapshot, const AsyncSnapshot.nothing());
     });
   });
 
   group('call function', () {
-    testWidgets('call function expected data ', (tester) async {
+    Widget callWidget<T>(
+      Future<T> Function() onAddPressed,
+      Function(AsyncSnapshot<T>) onStateChanged, {
+      T? initialData,
+      AsyncSnapshot<T>? state,
+      Function(T?)? onResult,
+    }) {
+      return ProviderScope(
+        child: HookConsumer(
+          builder: (c, ref, child) {
+            final mutation = useMutation(data: initialData, state: state);
+
+            useEffect(() {
+              onStateChanged(mutation.value);
+
+              listener() {
+                onStateChanged(mutation.value);
+              }
+
+              mutation.addListener(listener);
+              return () => mutation.removeListener(listener);
+            });
+
+            return Row(
+              textDirection: TextDirection.ltr,
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    final result = await mutation(
+                      onAddPressed(),
+                      mounted: () => c.mounted,
+                    )
+                        .then(
+                      (value) => value ?? null as T?,
+                    )
+                        .catchError((error, stackTrace) {
+                      expect(error, isA<UnimplementedError>());
+                      return null;
+                    });
+                    onResult?.call(result);
+                  },
+                  child: const Icon(
+                    Icons.add,
+                    textDirection: TextDirection.ltr,
+                  ),
+                ),
+                Text(
+                  mutation.value.connectionState.toString(),
+                  textDirection: TextDirection.ltr,
+                ),
+                if (mutation.isData)
+                  Text(
+                    mutation.value.data.toString(),
+                    textDirection: TextDirection.ltr,
+                  )
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    testWidgets('when value is none and call success expected done with data',
+        (tester) async {
+      ///given
+      const expectedData = 42;
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
+
+      fetchNumber() async {
+        await Future.delayed(const Duration(seconds: 4));
+        return expectedData;
+      }
+
+      await tester.pumpWidget(
+        callWidget(
+          fetchNumber,
+          (value) {
+            snapshot = value;
+          },
+        ),
+      );
+
+      ///Check the initial state
+      expect(snapshot.connectionState, ConnectionState.none);
+
+      //when
+      await tester.tap(find.byIcon(Icons.add));
+
+      ///then
+      await tester.pump(
+        const Duration(seconds: 1),
+      );
+
+      ///Check the state after the function is called and before the data is returned
+      expect(snapshot.connectionState, ConnectionState.waiting);
+
+      await tester.pump(
+        const Duration(seconds: 3),
+      );
+
+      ///Check the state after the data is returned
+      expect(snapshot.data, expectedData);
+      expect(snapshot.connectionState, ConnectionState.done);
+    });
+
+    testWidgets(
+        'when value is none and call has error expected done with error',
+        (tester) async {
+      ///given
+      const expectedError = 'error';
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
+
+      Future<int> fetchNumber() async {
+        await Future.delayed(const Duration(seconds: 5));
+        throw UnimplementedError(expectedError);
+      }
+
+      await tester.pumpWidget(
+        callWidget(
+          fetchNumber,
+          (value) {
+            snapshot = value;
+          },
+        ),
+      );
+
+      ///Check the initial state
+      expect(snapshot.connectionState, ConnectionState.none);
+
+      //when
+      await tester.tap(find.byIcon(Icons.add));
+
+      await tester.pump(
+        const Duration(seconds: 1),
+      );
+
+      ///Check the state after the function is called and before the data is returned
+      /// the state should be waiting
+      expect(snapshot.connectionState, ConnectionState.waiting);
+
+      await tester.pump(
+        const Duration(seconds: 4),
+      );
+
+      ///Check the state after the data is returned
+      expect(snapshot.error, isA<UnimplementedError>());
+      expect(snapshot.connectionState, ConnectionState.done);
+    });
+
+    testWidgets(
+        'should still waiting if the context is not mounted when the data is returned',
+        (tester) async {
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
+
       ///given
       const expectedData = 42;
 
@@ -203,45 +399,20 @@ void main() {
         return expectedData;
       }
 
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      mutation(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                      );
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.isData)
-                    Text(
-                      mutation.value.data.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
+      await tester.pumpWidget(
+        callWidget(
+          fetchNumber,
+          (value) {
+            snapshot = value;
+          },
+          onResult: (result) {
+            expect(result, expectedData);
+          },
+        ),
+      );
 
-      await tester.pumpWidget(build());
-
-      expect(find.text('ConnectionState.none'), findsOneWidget);
+      ///Check the initial state
+      expect(snapshot.connectionState, ConnectionState.none);
 
       await tester.tap(find.byIcon(Icons.add));
 
@@ -249,146 +420,8 @@ void main() {
         const Duration(seconds: 1),
       );
 
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
-
-      await tester.pump(
-        const Duration(seconds: 6),
-      );
-
-      expect(find.text('ConnectionState.done'), findsOneWidget);
-
-      expect(find.text(expectedData.toString()), findsOneWidget);
-    });
-
-    testWidgets('call function expected error ', (tester) async {
-      ///given
-      const expectedError = 'error';
-
-      //when
-      Future<int> fetchNumber() async {
-        await Future.delayed(const Duration(seconds: 7));
-        throw UnimplementedError(expectedError);
-      }
-
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      mutation(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                      ).then((value) => null).onError((error, stackTrace) {
-                        expect(error, isA<UnimplementedError>());
-                      });
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.hasError)
-                    Text(
-                      mutation.value.error.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
-
-      await tester.pumpWidget(build());
-
-      expect(find.text('ConnectionState.none'), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.add));
-
-      await tester.pump(
-        const Duration(seconds: 1),
-      );
-
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
-
-      await tester.pump(
-        const Duration(seconds: 6),
-      );
-
-      expect(find.text('ConnectionState.done'), findsOneWidget);
-    });
-
-    testWidgets('call function return  data  but context is not mounted ',
-        (tester) async {
-      ///given
-      const expectedData = 42;
-
-      ConnectionState value = ConnectionState.none;
-
-      //when
-      fetchNumber() async {
-        await Future.delayed(const Duration(seconds: 7));
-        return expectedData;
-      }
-
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await mutation(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                      );
-
-                      value = mutation.value.connectionState;
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.isData)
-                    Text(
-                      mutation.value.data.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
-
-      await tester.pumpWidget(build());
-
-      expect(find.text('ConnectionState.none'), findsOneWidget);
-
-      await tester.tap(find.byIcon(Icons.add));
-
-      await tester.pump(
-        const Duration(seconds: 1),
-      );
-
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
+      ///Check the state after the function is called and before the data is returned
+      expect(snapshot.connectionState, ConnectionState.waiting);
 
       ///Dispose the widget make the context not mounted
       await tester.pumpWidget(Container());
@@ -398,68 +431,39 @@ void main() {
       );
 
       /// there are no widget of text because the context is not mounted
-      expect(find.text('ConnectionState.waiting'), findsNothing);
-      expect(find.text('ConnectionState.done'), findsNothing);
+      expect(snapshot.connectionState, ConnectionState.waiting);
 
-      /// the value should be waiting and never updated because the context is not mounted
-      expect(value, ConnectionState.waiting);
+      expect(find.byType(Text), findsNothing);
+      expect(find.byType(Container), findsOneWidget);
     });
 
-    testWidgets('call function return  error  but context is not mounted ',
+    testWidgets(
+        'should still waiting if the context is not mounted when the null is returned',
         (tester) async {
       ///given
       const expectedError = 'error';
-
-      ConnectionState value = ConnectionState.none;
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
 
       //when
       Future<int> fetchNumber() async {
-        await Future.delayed(const Duration(seconds: 7));
+        await Future.delayed(const Duration(seconds: 5));
         throw UnimplementedError(expectedError);
       }
 
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await mutation(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                      ).then((value) => null).onError((error, stackTrace) {
-                        expect(error, isA<UnimplementedError>());
-                      });
-                      value = mutation.value.connectionState;
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.hasError)
-                    Text(
-                      mutation.value.error.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
+      await tester.pumpWidget(
+        callWidget(
+          fetchNumber,
+          (value) {
+            snapshot = value;
+          },
+          onResult: (result) {
+            expect(result, null);
+          },
+        ),
+      );
 
-      await tester.pumpWidget(build());
-
-      expect(find.text('ConnectionState.none'), findsOneWidget);
+      ///Check the initial state
+      expect(snapshot.connectionState, ConnectionState.none);
 
       await tester.tap(find.byIcon(Icons.add));
 
@@ -467,21 +471,22 @@ void main() {
         const Duration(seconds: 1),
       );
 
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
+      ///Check the state after the function is called and before the data is returned
+      expect(snapshot.connectionState, ConnectionState.waiting);
 
       ///Dispose the widget make the context not mounted
       await tester.pumpWidget(Container());
 
       await tester.pump(
-        const Duration(seconds: 6),
+        const Duration(seconds: 4),
       );
 
       /// there are no widget of text because the context is not mounted
-      expect(find.text('ConnectionState.waiting'), findsNothing);
-      expect(find.text('ConnectionState.done'), findsNothing);
+      expect(find.byType(Text), findsNothing);
+      expect(find.byType(Container), findsOneWidget);
 
       /// the value should be waiting and never updated because the context is not mounted
-      expect(value, ConnectionState.waiting);
+      expect(snapshot.connectionState, ConnectionState.waiting);
     });
   });
 
@@ -844,46 +849,4 @@ void main() {
       expect(value, ConnectionState.waiting);
     });
   });
-}
-
-Widget reloadWidget<T>(
-  Function(AsyncSnapshot<T>) onStateChanged, {
-  T? initialData,
-  AsyncSnapshot<T>? state,
-}) {
-  return ProviderScope(
-    child: HookConsumer(
-      builder: (c, ref, child) {
-        final mutation = useMutation(data: initialData, state: state);
-
-        useEffect(() {
-          onStateChanged(mutation.value);
-
-          listener() {
-            onStateChanged(mutation.value);
-          }
-
-          mutation.addListener(listener);
-          return () => mutation.removeListener(listener);
-        });
-
-        return Row(
-          textDirection: TextDirection.ltr,
-          children: [
-            GestureDetector(
-              onTap: mutation.reload,
-              child: const Icon(
-                Icons.clear,
-                textDirection: TextDirection.ltr,
-              ),
-            ),
-            Text(
-              mutation.value.connectionState.toString(),
-              textDirection: TextDirection.ltr,
-            ),
-          ],
-        );
-      },
-    ),
-  );
 }
