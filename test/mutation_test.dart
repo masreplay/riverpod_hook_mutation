@@ -1,6 +1,3 @@
-import 'dart:async';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -491,13 +488,13 @@ void main() {
   });
 
   group('mutate function', () {
-    Widget build<T>({
+    Widget build<T, R>({
       required Future<T> Function() fetchNumber,
-      required Function() whenLoadingCalled,
-      required Function() whenDataCalled,
-      required Function() whenErrorCalled,
-      required Function(AsyncSnapshot<T>) onStateChange,
-      Function(T?)? onResult,
+      required R Function() whenLoadingCalled,
+      required R? Function() whenDataCalled,
+      required R? Function() whenErrorCalled,
+      required R? Function(AsyncSnapshot<T>) onStateChange,
+      Function(R?)? onResult,
       T? initialData,
       AsyncSnapshot<T>? state,
     }) {
@@ -521,17 +518,17 @@ void main() {
               children: [
                 GestureDetector(
                   onTap: () async {
-                    final result = await mutation.mutate(
+                    final result = await mutation.mutate<R>(
                       fetchNumber(),
                       mounted: () => c.mounted,
                       loading: () {
-                        whenLoadingCalled();
+                        return whenLoadingCalled();
                       },
                       data: (data) {
-                        whenDataCalled();
+                        return whenDataCalled();
                       },
                       error: (error, stackTrace) {
-                        whenErrorCalled();
+                        return whenErrorCalled();
                       },
                     );
                     onResult?.call(result);
@@ -552,7 +549,8 @@ void main() {
       );
     }
 
-    testWidgets('mutate function expected data ', (tester) async {
+    testWidgets('when call mutate should expect done state with value',
+        (tester) async {
       ///given
       AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
       const expectedData = 42;
@@ -572,7 +570,7 @@ void main() {
       expect(isErrorCalled, false);
 
       await tester.pumpWidget(
-        build<int>(
+        build(
           fetchNumber: fetchNumber,
           whenLoadingCalled: () {
             isLoadingCalled = true;
@@ -611,8 +609,10 @@ void main() {
       expect(isErrorCalled, false);
     });
 
-    testWidgets('mutate function expected error ', (tester) async {
+    testWidgets('when call mutate should expect done state with error',
+        (tester) async {
       ///given
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
       const expectedError = 'error';
       bool isLoadingCalled = false;
       bool isDataCalled = false;
@@ -624,89 +624,63 @@ void main() {
         throw UnimplementedError(expectedError);
       }
 
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await mutation.mutate(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                        loading: () {
-                          isLoadingCalled = true;
-                        },
-                        data: (data) {
-                          isDataCalled = true;
-                        },
-                        error: (error, stackTrace) {
-                          isErrorCalled = true;
-                          expect(error, isA<UnimplementedError>());
-                        },
-                      );
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.hasError)
-                    Text(
-                      mutation.value.error.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
+      await tester.pumpWidget(
+        build(
+          fetchNumber: fetchNumber,
+          whenLoadingCalled: () {
+            isLoadingCalled = true;
+          },
+          whenDataCalled: () {
+            isDataCalled = true;
+          },
+          whenErrorCalled: () {
+            isErrorCalled = true;
+          },
+          onStateChange: (value) {
+            snapshot = value;
+          },
+        ),
+      );
 
       expect(isDataCalled, false);
       expect(isLoadingCalled, false);
       expect(isErrorCalled, false);
 
-      await tester.pumpWidget(build());
+      expect(snapshot.connectionState, ConnectionState.none);
 
-      expect(find.text('ConnectionState.none'), findsOneWidget);
-
+      ///when
       await tester.tap(find.byIcon(Icons.add));
 
+      ///then
       await tester.pump(
         const Duration(seconds: 1),
       );
 
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
-
+      ///Check if state is waiting and loading is called
+      expect(snapshot.connectionState, ConnectionState.waiting);
       expect(isLoadingCalled, true);
+
       await tester.pump(
         const Duration(seconds: 6),
       );
 
-      expect(find.text('ConnectionState.done'), findsOneWidget);
+      ///Check if state is done and error is called and data is not called
+      expect(snapshot.connectionState, ConnectionState.done);
+      expect(snapshot.error, isA<UnimplementedError>());
       expect(isDataCalled, false);
       expect(isErrorCalled, true);
     });
 
     testWidgets(
-        'mutate function expected data  but context will not be mounted',
+        'when call mutate and context is not mounted should expect waiting state',
         (tester) async {
       ///given
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
       const expectedData = 42;
 
       bool isLoadingCalled = false;
       bool isDataCalled = false;
       bool isErrorCalled = false;
-
-      ConnectionState value = ConnectionState.none;
 
       //when
       fetchNumber() async {
@@ -714,91 +688,77 @@ void main() {
         return expectedData;
       }
 
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await mutation.mutate(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                        loading: () {
-                          isLoadingCalled = true;
-                        },
-                        data: (data) {
-                          isDataCalled = true;
-                        },
-                        error: (error, stackTrace) {
-                          isErrorCalled = true;
-                        },
-                      );
-                      value = mutation.value.connectionState;
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.isData)
-                    Text(
-                      mutation.value.data.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
+      await tester.pumpWidget(
+        build(
+          fetchNumber: fetchNumber,
+          whenLoadingCalled: () {
+            isLoadingCalled = true;
+          },
+          whenDataCalled: () {
+            isDataCalled = true;
+          },
+          whenErrorCalled: () {
+            isErrorCalled = true;
+          },
+          onStateChange: (value) {
+            snapshot = value;
+          },
+          onResult: (value) {
+            expect(value, null);
+          },
+        ),
+      );
 
       expect(isDataCalled, false);
       expect(isLoadingCalled, false);
       expect(isErrorCalled, false);
 
-      await tester.pumpWidget(build());
+      expect(snapshot.connectionState, ConnectionState.none);
 
-      expect(find.text('ConnectionState.none'), findsOneWidget);
-
+      ///when
       await tester.tap(find.byIcon(Icons.add));
+
+      ///then
       await tester.pump(
         const Duration(seconds: 1),
       );
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
+
+      ///Check if state is waiting and loading is called
+      expect(snapshot.connectionState, ConnectionState.waiting);
       expect(isLoadingCalled, true);
 
+      ///Dispose the widget make the context not mounted
       await tester.pumpWidget(
         Container(),
       );
+
+      /// ensure the widget is disposed and the context is not mounted
+      expect(find.byType(Container), findsOneWidget);
+      expect(find.byType(Text), findsNothing);
 
       await tester.pump(
         const Duration(seconds: 6),
       );
 
+      ///State still loading
+      expect(snapshot.connectionState, ConnectionState.waiting);
+
+      ///Check if data and error is not called
       expect(isDataCalled, false);
       expect(isErrorCalled, false);
-      expect(value, ConnectionState.waiting);
     });
 
     testWidgets(
-        'mutate function expected error  but context will not be mounted',
+        'when call mutate with error and context is not mounted should expect waiting state',
         (tester) async {
       ///given
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
+
       const expectedError = 'error';
 
       bool isLoadingCalled = false;
       bool isDataCalled = false;
       bool isErrorCalled = false;
-
-      ConnectionState value = ConnectionState.none;
 
       //when
       Future<int> fetchNumber() async {
@@ -806,82 +766,61 @@ void main() {
         throw UnimplementedError(expectedError);
       }
 
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await mutation.mutate(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                        loading: () {
-                          isLoadingCalled = true;
-                        },
-                        data: (data) {
-                          isDataCalled = true;
-                        },
-                        error: (error, stackTrace) {
-                          isErrorCalled = true;
-                          expect(error, isA<UnimplementedError>());
-                        },
-                      );
-                      value = mutation.value.connectionState;
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.hasError)
-                    Text(
-                      mutation.value.error.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
-      }
+      await tester.pumpWidget(
+        build(
+          fetchNumber: fetchNumber,
+          whenLoadingCalled: () {
+            isLoadingCalled = true;
+          },
+          whenDataCalled: () {
+            isDataCalled = true;
+          },
+          whenErrorCalled: () {
+            isErrorCalled = true;
+          },
+          onStateChange: (value) {
+            snapshot = value;
+          },
+          onResult: (value) {
+            expect(value, null);
+          },
+        ),
+      );
 
       expect(isDataCalled, false);
       expect(isLoadingCalled, false);
       expect(isErrorCalled, false);
 
-      await tester.pumpWidget(build());
+      expect(snapshot.connectionState, ConnectionState.none);
 
-      expect(find.text('ConnectionState.none'), findsOneWidget);
-
+      ///when
       await tester.tap(find.byIcon(Icons.add));
 
+      ///then
       await tester.pump(
         const Duration(seconds: 1),
       );
 
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
+      expect(snapshot.connectionState, ConnectionState.waiting);
 
       expect(isLoadingCalled, true);
 
+      ///Dispose the widget make the context not mounted
       await tester.pumpWidget(
         Container(),
       );
+
+      /// ensure the widget is disposed and the context is not mounted
+      expect(find.byType(Container), findsOneWidget);
+      expect(find.byType(Text), findsNothing);
 
       await tester.pump(
         const Duration(seconds: 6),
       );
 
+      expect(snapshot.connectionState, ConnectionState.waiting);
       expect(isDataCalled, false);
       expect(isErrorCalled, false);
-      expect(value, ConnectionState.waiting);
     });
   });
 }
