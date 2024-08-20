@@ -84,7 +84,6 @@ class Todos extends _$Todos {
   }
 
   Future<TodoModel> addTodo() async {
-    throw Exception();
     final result = await _repository.createTodo();
     ref.invalidateSelf();
 

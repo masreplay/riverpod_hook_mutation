@@ -823,4 +823,219 @@ void main() {
       expect(isErrorCalled, false);
     });
   });
+
+  group('when functions', () {
+    Widget build<T>({
+      AsyncSnapshot<T>? initialState,
+      Future<T> Function()? onPressed,
+    }) {
+      return ProviderScope(
+        child: HookConsumer(
+          builder: (c, ref, child) {
+            final mutation = useMutation(
+              state: initialState,
+            );
+            return Column(
+              textDirection: TextDirection.ltr,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    if (onPressed != null) {
+                      mutation.mutate<int>(
+                        onPressed(),
+                        mounted: () => c.mounted,
+                      );
+                    }
+                  },
+                  child: const Icon(
+                    Icons.add,
+                    textDirection: TextDirection.ltr,
+                  ),
+                ),
+                mutation.when(
+                  idle: () {
+                    return Text(
+                      ConnectionState.none.name,
+                      textDirection: TextDirection.ltr,
+                    );
+                  },
+                  data: (data) {
+                    return Text(
+                      ConnectionState.done.name,
+                      textDirection: TextDirection.ltr,
+                    );
+                  },
+                  error: (error, _) {
+                    return Text(
+                      ConnectionState.done.name,
+                      textDirection: TextDirection.ltr,
+                    );
+                  },
+                  loading: () {
+                    return Text(
+                      ConnectionState.waiting.name,
+                      textDirection: TextDirection.ltr,
+                    );
+                  },
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
+    group('when', () {
+      testWidgets('should execute idle function only', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsOneWidget);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+      });
+
+      testWidgets('should execute data function only', (widgetTester) async {
+        ///given
+        const data = 42;
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              data,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+      });
+
+      testWidgets('should execute error function only', (widgetTester) async {
+        ///given
+        const error = 'error';
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              error,
+              StackTrace.current,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+      });
+
+      testWidgets('should execute loading function only', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsOneWidget);
+      });
+
+      //case noting -> click icon -> loading -> done
+      testWidgets('should execute loading then done ', (widgetTester) async {
+        ///given
+        const data = 42;
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            onPressed: () async {
+              await Future.delayed(const Duration(seconds: 5));
+              return data;
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsOneWidget);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+
+        ///when
+        await widgetTester.tap(find.byIcon(Icons.add));
+
+        await widgetTester.pump(
+          const Duration(seconds: 1),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsOneWidget);
+
+        await widgetTester.pump(
+          const Duration(seconds: 5),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+      });
+
+      //case noting -> click icon -> loading -> error
+      testWidgets('should execute loading then error', (widgetTester) async {
+        ///given
+        const error = 'error';
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            onPressed: () async {
+              await Future.delayed(const Duration(seconds: 5));
+              throw UnimplementedError(error);
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsOneWidget);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+
+        ///when
+        await widgetTester.tap(find.byIcon(Icons.add));
+
+        await widgetTester.pump(
+          const Duration(seconds: 1),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsOneWidget);
+
+        await widgetTester.pump(
+          const Duration(seconds: 5),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+      });
+    });
+  });
 }
