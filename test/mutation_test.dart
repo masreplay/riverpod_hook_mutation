@@ -491,8 +491,70 @@ void main() {
   });
 
   group('mutate function', () {
+    Widget build<T>({
+      required Future<T> Function() fetchNumber,
+      required Function() whenLoadingCalled,
+      required Function() whenDataCalled,
+      required Function() whenErrorCalled,
+      required Function(AsyncSnapshot<T>) onStateChange,
+      Function(T?)? onResult,
+      T? initialData,
+      AsyncSnapshot<T>? state,
+    }) {
+      return ProviderScope(
+        child: HookConsumer(
+          builder: (c, ref, child) {
+            final mutation = useMutation<T>();
+
+            useEffect(() {
+              onStateChange(mutation.value);
+
+              listener() {
+                onStateChange(mutation.value);
+              }
+
+              mutation.addListener(listener);
+              return () => mutation.removeListener(listener);
+            });
+            return Row(
+              textDirection: TextDirection.ltr,
+              children: [
+                GestureDetector(
+                  onTap: () async {
+                    final result = await mutation.mutate(
+                      fetchNumber(),
+                      mounted: () => c.mounted,
+                      loading: () {
+                        whenLoadingCalled();
+                      },
+                      data: (data) {
+                        whenDataCalled();
+                      },
+                      error: (error, stackTrace) {
+                        whenErrorCalled();
+                      },
+                    );
+                    onResult?.call(result);
+                  },
+                  child: const Icon(
+                    Icons.add,
+                    textDirection: TextDirection.ltr,
+                  ),
+                ),
+                Text(
+                  mutation.value.connectionState.toString(),
+                  textDirection: TextDirection.ltr,
+                ),
+              ],
+            );
+          },
+        ),
+      );
+    }
+
     testWidgets('mutate function expected data ', (tester) async {
       ///given
+      AsyncSnapshot<int> snapshot = const AsyncSnapshot.nothing();
       const expectedData = 42;
 
       bool isLoadingCalled = false;
@@ -501,76 +563,49 @@ void main() {
 
       //when
       fetchNumber() async {
-        await Future.delayed(const Duration(seconds: 7));
+        await Future.delayed(const Duration(seconds: 5));
         return expectedData;
-      }
-
-      Widget build() {
-        return ProviderScope(
-          child: HookConsumer(
-            builder: (c, ref, child) {
-              final mutation = useMutation<int>();
-              return Row(
-                textDirection: TextDirection.ltr,
-                children: [
-                  GestureDetector(
-                    onTap: () async {
-                      await mutation.mutate(
-                        fetchNumber(),
-                        mounted: () => c.mounted,
-                        loading: () {
-                          isLoadingCalled = true;
-                        },
-                        data: (data) {
-                          isDataCalled = true;
-                        },
-                        error: (error, stackTrace) {
-                          isErrorCalled = true;
-                        },
-                      );
-                    },
-                    child: const Icon(
-                      Icons.add,
-                      textDirection: TextDirection.ltr,
-                    ),
-                  ),
-                  Text(
-                    mutation.value.connectionState.toString(),
-                    textDirection: TextDirection.ltr,
-                  ),
-                  if (mutation.isData)
-                    Text(
-                      mutation.value.data.toString(),
-                      textDirection: TextDirection.ltr,
-                    )
-                ],
-              );
-            },
-          ),
-        );
       }
 
       expect(isDataCalled, false);
       expect(isLoadingCalled, false);
       expect(isErrorCalled, false);
 
-      await tester.pumpWidget(build());
+      await tester.pumpWidget(
+        build<int>(
+          fetchNumber: fetchNumber,
+          whenLoadingCalled: () {
+            isLoadingCalled = true;
+          },
+          whenDataCalled: () {
+            isDataCalled = true;
+          },
+          whenErrorCalled: () {
+            isErrorCalled = true;
+          },
+          onStateChange: (value) {
+            snapshot = value;
+          },
+        ),
+      );
 
-      expect(find.text('ConnectionState.none'), findsOneWidget);
+      expect(snapshot.connectionState, ConnectionState.none);
 
       await tester.tap(find.byIcon(Icons.add));
+
       await tester.pump(
         const Duration(seconds: 1),
       );
-      expect(find.text('ConnectionState.waiting'), findsOneWidget);
+
+      expect(snapshot.connectionState, ConnectionState.waiting);
       expect(isLoadingCalled, true);
 
       await tester.pump(
-        const Duration(seconds: 6),
+        const Duration(seconds: 4),
       );
 
-      expect(find.text('ConnectionState.done'), findsOneWidget);
-      expect(find.text(expectedData.toString()), findsOneWidget);
+      expect(snapshot.connectionState, ConnectionState.done);
+      expect(snapshot.data, expectedData);
 
       expect(isDataCalled, true);
       expect(isErrorCalled, false);
