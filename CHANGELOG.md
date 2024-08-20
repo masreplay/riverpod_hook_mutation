@@ -21,3 +21,4 @@
 
 ## 0.0.6
 * Fix is mounted crashed when error occurred
+
