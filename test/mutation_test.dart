@@ -1037,5 +1037,635 @@ void main() {
         expect(find.text(ConnectionState.done.name), findsOneWidget);
       });
     });
+
+    group('when or null', () {
+      Widget build<T, R extends Widget>({
+        required AsyncSnapshot<T> initialState,
+        AsyncIdleCallback<R?>? idle,
+        AsyncDataCallback<R?, T>? data,
+        AsyncErrorCallback<R?>? error,
+        AsyncLoadingCallback<R?>? loading,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return mutation.whenOrNull(
+                    idle: idle,
+                    data: data,
+                    error: error,
+                    loading: loading,
+                  ) ??
+                  const Text(
+                    'null',
+                    textDirection: TextDirection.ltr,
+                  );
+            },
+          ),
+        );
+      }
+
+      testWidgets('should execute idle function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+            idle: () {
+              return Text(
+                ConnectionState.none.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsOneWidget);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.text('null'), findsNothing);
+      });
+
+      testWidgets('should execute data function', (widgetTester) async {
+        ///given
+        const data = 42;
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              data,
+            ),
+            data: (data) {
+              return Text(
+                ConnectionState.done.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.text('null'), findsNothing);
+      });
+
+      testWidgets('should execute error function', (widgetTester) async {
+        ///given
+        const error = 'error';
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              error,
+              StackTrace.current,
+            ),
+            error: (error, _) {
+              return Text(
+                ConnectionState.done.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.text('null'), findsNothing);
+      });
+
+      testWidgets('should execute loading function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+            loading: () {
+              return Text(
+                ConnectionState.waiting.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsOneWidget);
+        expect(find.text('null'), findsNothing);
+      });
+
+      testWidgets('should return null', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.text('null'), findsOneWidget);
+      });
+    });
+
+    group('maybe when', () {
+      Widget build<T, R extends Widget>({
+        required AsyncSnapshot<T> initialState,
+        AsyncIdleCallback<R?>? idle,
+        AsyncDataCallback<R?, T>? data,
+        AsyncErrorCallback<R?>? error,
+        AsyncLoadingCallback<R?>? loading,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return mutation.maybeWhen(
+                idle: idle,
+                data: data,
+                error: error,
+                loading: loading,
+                orElse: () {
+                  return Container();
+                },
+              );
+            },
+          ),
+        );
+      }
+
+      testWidgets('should execute idle function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+            idle: () {
+              return Text(
+                ConnectionState.none.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsOneWidget);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should execute data function', (widgetTester) async {
+        ///given
+        const data = 42;
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              data,
+            ),
+            data: (data) {
+              return Text(
+                ConnectionState.done.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should execute error function', (widgetTester) async {
+        ///given
+        const error = 'error';
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              error,
+              StackTrace.current,
+            ),
+            error: (error, _) {
+              return Text(
+                ConnectionState.done.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsOneWidget);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should execute loading function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+            loading: () {
+              return Text(
+                ConnectionState.waiting.name,
+                textDirection: TextDirection.ltr,
+              );
+            },
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsOneWidget);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should return Container', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.text(ConnectionState.done.name), findsNothing);
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+    });
+
+    group('when Data', () {
+      const data = 42;
+      Widget build<R extends Widget>({
+        required AsyncSnapshot<int> initialState,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return mutation.whenData(
+                    (data) {
+                      return Text(
+                        '${ConnectionState.done.name} $data',
+                        textDirection: TextDirection.ltr,
+                      );
+                    },
+                  ) ??
+                  Container();
+            },
+          ),
+        );
+      }
+
+      testWidgets('should execute data function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              data,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text('${ConnectionState.done.name} $data'), findsOneWidget);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should return Container when initial state is noting',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+          ),
+        );
+
+        ///then
+        expect(find.text('${ConnectionState.done.name} $data'), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is waiting ',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+          ),
+        );
+
+        ///then
+        expect(find.text('${ConnectionState.done.name} $data'), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is error',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              'error',
+              StackTrace.current,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text('${ConnectionState.done.name} $data'), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+    });
+
+    group('when error', () {
+      const error = 'error';
+
+      Widget build<T, R extends Widget>({
+        required AsyncSnapshot<T> initialState,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return mutation.whenError((error, _) {
+                    return Text(
+                      ConnectionState.done.name + error.toString(),
+                      textDirection: TextDirection.ltr,
+                    );
+                  }) ??
+                  Container();
+            },
+          ),
+        );
+      }
+
+      testWidgets('should execute error function', (widgetTester) async {
+        ///given
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              error,
+              StackTrace.current,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.done.name + error), findsOneWidget);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should return Container when initial state is noting',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.done.name + error), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is waiting ',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.done.name + error), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is data',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              42,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.done.name + error), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+    });
+
+    group('when loading', () {
+      Widget build<T, R extends Widget>({
+        required AsyncSnapshot<T> initialState,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return mutation.whenLoading(
+                    () => Text(
+                      ConnectionState.waiting.name,
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ) ??
+                  Container();
+            },
+          ),
+        );
+      }
+
+      testWidgets('should execute loading function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.waiting.name), findsOneWidget);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should return Container when initial state is noting',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is data',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              42,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is error',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              'error',
+              StackTrace.current,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.waiting.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+    });
+
+    group('when idle', () {
+      Widget build<T, R extends Widget>({
+        required AsyncSnapshot<T> initialState,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return mutation.whenIdle(
+                    () => Text(
+                      ConnectionState.none.name,
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ) ??
+                  Container();
+            },
+          ),
+        );
+      }
+
+      testWidgets('should execute idle function', (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.nothing(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsOneWidget);
+        expect(find.byType(Container), findsNothing);
+      });
+
+      testWidgets('should return Container when initial state is data',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot.withData(
+              ConnectionState.done,
+              42,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is error',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: AsyncSnapshot.withError(
+              ConnectionState.done,
+              'error',
+              StackTrace.current,
+            ),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+
+      testWidgets('should return Container when initial state is waiting',
+          (widgetTester) async {
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            initialState: const AsyncSnapshot<int>.waiting(),
+          ),
+        );
+
+        ///then
+        expect(find.text(ConnectionState.none.name), findsNothing);
+        expect(find.byType(Container), findsOneWidget);
+      });
+    });
   });
 }
