@@ -66,23 +66,29 @@ extension AsyncSnapshotExtension<T> on AsyncSnapshot<T> {
   }
 
   R maybeWhen<R>({
-    AsyncIdleCallback<R?>? idle,
-    AsyncDataCallback<R?, T>? data,
-    AsyncErrorCallback<R?>? error,
-    AsyncLoadingCallback<R?>? loading,
+    AsyncIdleCallback<R>? idle,
+    AsyncDataCallback<R, T>? data,
+    AsyncErrorCallback<R>? error,
+    AsyncLoadingCallback<R>? loading,
     required R Function() orElse,
   }) {
     switch (connectionState) {
       case ConnectionState.none:
-        return idle?.call() ?? orElse.call();
+        return (idle ?? orElse).call();
       case ConnectionState.waiting:
-        return loading?.call() ?? orElse.call();
+        return (loading ?? orElse).call();
       case ConnectionState.active:
       case ConnectionState.done:
         if (hasError) {
-          return error?.call(this.error, stackTrace) ?? orElse.call();
+          if (error == null) {
+            return orElse.call();
+          }
+          return error.call(this.error, stackTrace);
         } else {
-          return data?.call(this.data as T) ?? orElse.call();
+          if (data == null) {
+            return orElse.call();
+          }
+          return data.call(this.data as T);
         }
     }
   }

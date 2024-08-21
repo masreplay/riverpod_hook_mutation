@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -825,67 +827,67 @@ void main() {
   });
 
   group('when functions', () {
-    Widget build<T>({
-      AsyncSnapshot<T>? initialState,
-      Future<T> Function()? onPressed,
-    }) {
-      return ProviderScope(
-        child: HookConsumer(
-          builder: (c, ref, child) {
-            final mutation = useMutation(
-              state: initialState,
-            );
-            return Column(
-              textDirection: TextDirection.ltr,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    if (onPressed != null) {
-                      mutation.mutate<int>(
-                        onPressed(),
-                        mounted: () => c.mounted,
-                      );
-                    }
-                  },
-                  child: const Icon(
-                    Icons.add,
-                    textDirection: TextDirection.ltr,
-                  ),
-                ),
-                mutation.when(
-                  idle: () {
-                    return Text(
-                      ConnectionState.none.name,
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                  data: (data) {
-                    return Text(
-                      ConnectionState.done.name,
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                  error: (error, _) {
-                    return Text(
-                      ConnectionState.done.name,
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                  loading: () {
-                    return Text(
-                      ConnectionState.waiting.name,
-                      textDirection: TextDirection.ltr,
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        ),
-      );
-    }
-
     group('when', () {
+      Widget build<T>({
+        AsyncSnapshot<T>? initialState,
+        Future<T> Function()? onPressed,
+      }) {
+        return ProviderScope(
+          child: HookConsumer(
+            builder: (c, ref, child) {
+              final mutation = useMutation(
+                state: initialState,
+              );
+              return Column(
+                textDirection: TextDirection.ltr,
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      if (onPressed != null) {
+                        mutation.mutate<int>(
+                          onPressed(),
+                          mounted: () => c.mounted,
+                        );
+                      }
+                    },
+                    child: const Icon(
+                      Icons.add,
+                      textDirection: TextDirection.ltr,
+                    ),
+                  ),
+                  mutation.when(
+                    idle: () {
+                      return Text(
+                        ConnectionState.none.name,
+                        textDirection: TextDirection.ltr,
+                      );
+                    },
+                    data: (data) {
+                      return Text(
+                        ConnectionState.done.name,
+                        textDirection: TextDirection.ltr,
+                      );
+                    },
+                    error: (error, _) {
+                      return Text(
+                        ConnectionState.done.name,
+                        textDirection: TextDirection.ltr,
+                      );
+                    },
+                    loading: () {
+                      return Text(
+                        ConnectionState.waiting.name,
+                        textDirection: TextDirection.ltr,
+                      );
+                    },
+                  ),
+                ],
+              );
+            },
+          ),
+        );
+      }
+
       testWidgets('should execute idle function only', (widgetTester) async {
         ///when
         await widgetTester.pumpWidget(
@@ -1183,10 +1185,10 @@ void main() {
     group('maybe when', () {
       Widget build<T, R extends Widget>({
         required AsyncSnapshot<T> initialState,
-        AsyncIdleCallback<R?>? idle,
-        AsyncDataCallback<R?, T>? data,
-        AsyncErrorCallback<R?>? error,
-        AsyncLoadingCallback<R?>? loading,
+        AsyncIdleCallback<R>? idle,
+        AsyncDataCallback<R, T>? data,
+        AsyncErrorCallback<R>? error,
+        AsyncLoadingCallback<R>? loading,
       }) {
         return ProviderScope(
           child: HookConsumer(
@@ -1665,6 +1667,132 @@ void main() {
         ///then
         expect(find.text(ConnectionState.none.name), findsNothing);
         expect(find.byType(Container), findsOneWidget);
+      });
+    });
+
+    group('when mutate ', () {
+      testWidgets('should `throwException` still false when await completed',
+          (widgetTester) async {
+        bool throwException = false;
+
+        Widget build<T, R extends Widget>({
+          required Future<T> Function() onPressed,
+        }) {
+          return ProviderScope(
+            child: HookConsumer(
+              builder: (c, ref, child) {
+                final mutation = useMutation<T>();
+                return GestureDetector(
+                  onTap: () async {
+                    await mutation.mutate<R>(
+                      onPressed(),
+                      mounted: () => c.mounted,
+                    );
+
+                    try {
+                      mutation.whenMutated(
+                        data: (data) {
+                          print('DAAAAta');
+                        },
+                        error: (error, stackTrace) {
+                          print('ERROR');
+                        },
+                      );
+                    } catch (e) {
+                      throwException = true;
+                    }
+                  },
+                  child: const Icon(
+                    Icons.add,
+                    textDirection: TextDirection.ltr,
+                  ),
+                );
+              },
+            ),
+          );
+        }
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            onPressed: () async {
+              await Future.delayed(const Duration(seconds: 5));
+              return 32;
+            },
+          ),
+        );
+
+        ///when
+        await widgetTester.tap(find.byIcon(Icons.add));
+
+        await widgetTester.pump(
+          const Duration(seconds: 1),
+        );
+
+        expect(throwException, false);
+
+        await widgetTester.pump(
+          const Duration(seconds: 5),
+        );
+
+        expect(throwException, false);
+      });
+
+      testWidgets('should throw exception when call `whenMutate` directly',
+          (widgetTester) async {
+        bool throwException = false;
+
+        Widget build<T, R extends Widget>({
+          required Future<T> Function() onPressed,
+        }) {
+          return ProviderScope(
+            child: HookConsumer(
+              builder: (c, ref, child) {
+                final mutation = useMutation<T>();
+                return GestureDetector(
+                  onTap: () async {
+                    mutation.mutate<R>(
+                      onPressed(),
+                      mounted: () => c.mounted,
+                    );
+
+                    try {
+                      mutation.whenMutated(
+                        data: (data) {},
+                        error: (error, stackTrace) {},
+                      );
+                    } catch (e) {
+                      throwException = true;
+                    }
+                  },
+                  child: const Icon(
+                    Icons.add,
+                    textDirection: TextDirection.ltr,
+                  ),
+                );
+              },
+            ),
+          );
+        }
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            onPressed: () async {
+              await Future.delayed(const Duration(seconds: 5));
+              return 32;
+            },
+          ),
+        );
+
+        ///when
+        await widgetTester.tap(find.byIcon(Icons.add));
+
+        await widgetTester.pump(
+          const Duration(seconds: 5),
+        );
+
+        expect(throwException, true);
       });
     });
   });

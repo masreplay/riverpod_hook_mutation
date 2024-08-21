@@ -183,10 +183,10 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
   }
 
   R maybeWhen<R>({
-    AsyncIdleCallback<R?>? idle,
-    AsyncDataCallback<R?, T>? data,
-    AsyncErrorCallback<R?>? error,
-    AsyncLoadingCallback<R?>? loading,
+    AsyncIdleCallback<R>? idle,
+    AsyncDataCallback<R, T>? data,
+    AsyncErrorCallback<R>? error,
+    AsyncLoadingCallback<R>? loading,
     required R Function() orElse,
   }) {
     return value.maybeWhen(
