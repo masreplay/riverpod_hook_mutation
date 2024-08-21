@@ -180,15 +180,7 @@ class ItemAddScreen extends HookConsumerWidget {
               addTodo(
                 notifier.addTodo(),
                 mounted: () => context.mounted,
-              )
-                  .then((value) => {print('object')})
-                  .onError((error, stackTrace) => {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Error: $error'),
-                          ),
-                        )
-                      });
+              );
             },
           ),
           FilledButton(

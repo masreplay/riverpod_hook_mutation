@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1671,7 +1669,8 @@ void main() {
     });
 
     group('when mutate ', () {
-      testWidgets('should `throwException` still false when await completed',
+      testWidgets(
+          'should flag still false when await mutate completed and context is mounted',
           (widgetTester) async {
         bool throwException = false;
 
@@ -1684,19 +1683,16 @@ void main() {
                 final mutation = useMutation<T>();
                 return GestureDetector(
                   onTap: () async {
-                    await mutation.mutate<R>(
+                    final result = await mutation.mutate<R>(
                       onPressed(),
                       mounted: () => c.mounted,
                     );
 
+                    if (result == null) return;
                     try {
                       mutation.whenMutated(
-                        data: (data) {
-                          print('DAAAAta');
-                        },
-                        error: (error, stackTrace) {
-                          print('ERROR');
-                        },
+                        data: (data) {},
+                        error: (error, stackTrace) {},
                       );
                     } catch (e) {
                       throwException = true;
@@ -1787,6 +1783,78 @@ void main() {
 
         ///when
         await widgetTester.tap(find.byIcon(Icons.add));
+
+        await widgetTester.pump(
+          const Duration(seconds: 5),
+        );
+
+        expect(throwException, true);
+      });
+      testWidgets(
+          'should `throwException` and context be unmounted  still false when await mutate completed',
+          (widgetTester) async {
+        bool throwException = false;
+
+        Widget build<T, R extends Widget>({
+          required Future<T> Function() onPressed,
+        }) {
+          return ProviderScope(
+            child: HookConsumer(
+              builder: (c, ref, child) {
+                final mutation = useMutation<T>();
+                return GestureDetector(
+                  onTap: () async {
+                    await mutation.mutate<R>(
+                      onPressed(),
+                      mounted: () => c.mounted,
+                    );
+
+                    try {
+                      mutation.whenMutated(
+                        data: (data) {},
+                        error: (error, stackTrace) {},
+                      );
+                    } catch (e) {
+                      throwException = true;
+                    }
+                  },
+                  child: const Icon(
+                    Icons.add,
+                    textDirection: TextDirection.ltr,
+                  ),
+                );
+              },
+            ),
+          );
+        }
+
+        ///when
+        await widgetTester.pumpWidget(
+          build(
+            onPressed: () async {
+              await Future.delayed(const Duration(seconds: 5));
+              throw UnimplementedError('error');
+              // return 32;
+            },
+          ),
+        );
+
+        ///when
+        await widgetTester.tap(find.byIcon(Icons.add));
+
+        await widgetTester.pump(
+          const Duration(seconds: 1),
+        );
+
+        expect(throwException, false);
+
+        ///Dispose the widget make the context not mounted
+        await widgetTester.pumpWidget(
+          Container(),
+        );
+
+        expect(find.byType(Container), findsOneWidget);
+        expect(find.byType(GestureDetector), findsNothing);
 
         await widgetTester.pump(
           const Duration(seconds: 5),
