@@ -22,3 +22,6 @@
 ## 0.0.6
 * Fix is mounted crashed when error occurred
 
+## 0.0.7
+* Add testing by @Shahad-999
+
