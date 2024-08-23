@@ -80,14 +80,10 @@ extension AsyncSnapshotExtension<T> on AsyncSnapshot<T> {
       case ConnectionState.active:
       case ConnectionState.done:
         if (hasError) {
-          if (error == null) {
-            return orElse.call();
-          }
+          if (error == null) return orElse.call();
           return error.call(this.error, stackTrace);
         } else {
-          if (data == null) {
-            return orElse.call();
-          }
+          if (data == null) return orElse.call();
           return data.call(this.data as T);
         }
     }
