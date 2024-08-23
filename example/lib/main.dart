@@ -174,7 +174,7 @@ class ItemAddScreen extends HookConsumerWidget {
           FilledButton(
             child: const Text('Add .call'),
             onPressed: () {
-              Navigator.of(context).pop();
+              // Navigator.of(context).pop();
 
               final notifier = ref.read(todosProvider.notifier);
               addTodo(
