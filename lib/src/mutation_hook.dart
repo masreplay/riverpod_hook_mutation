@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:developer';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 
 import 'async_snapshot_extension.dart';
+
+const String packageName = "riverpod_hook_mutation";
 
 /// A custom hook that provides a [ValueNotifier] for managing asynchronous state.
 ///
@@ -67,7 +70,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     try {
       final result = await future;
 
-      if (kDebugMode) print('[riverpod_hook_mutation] Data: $result');
+      if (kDebugMode) log('Data: $result', name: packageName);
 
       if (!mounted()) return result;
 
@@ -77,7 +80,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
       );
       return result;
     } catch (e, stackTrace) {
-      if (kDebugMode) print('[riverpod_hook_mutation] Error: $e');
+      if (kDebugMode) log('Error: $e', name: packageName);
 
       if (!mounted()) return null;
 
@@ -103,7 +106,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
     try {
       final result = await future;
 
-      if (kDebugMode) print('[riverpod_hook_mutation] Data: $result');
+      if (kDebugMode) log('Data: $result', name: packageName);
 
       if (!mounted()) return null;
 
@@ -114,7 +117,7 @@ extension ValueNotifierAsyncSnapshot<T> on ValueNotifier<AsyncSnapshot<T>> {
 
       return data?.call(result);
     } catch (e, stackTrace) {
-      if (kDebugMode) print('[riverpod_hook_mutation] Error: $e');
+      if (kDebugMode) log('Error: $e', name: packageName);
 
       if (!mounted()) return null;
 
